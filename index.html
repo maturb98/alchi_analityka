@@ -1,0 +1,928 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ALCHI Analityka v2.1</title>
+    
+    <!-- Fonty & Chart.js -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <style>
+        :root {
+            /* Nowy schemat kolorów: Light / Clean */
+            --bg-body: #f1f5f9;       /* Slate 100 */
+            --bg-card: #ffffff;       /* White */
+            --bg-sidebar: #ffffff;    /* White */
+            --bg-hover: #f8fafc;      /* Slate 50 */
+            
+            --text-main: #334155;     /* Slate 700 */
+            --text-heading: #0f172a;  /* Slate 900 */
+            --text-muted: #64748b;    /* Slate 500 */
+            
+            --border-color: #e2e8f0;  /* Slate 200 */
+            
+            --accent: #2563eb;        /* Blue 600 */
+            --accent-light: #eff6ff;  /* Blue 50 */
+            
+            --success: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            
+            --grid-gap: 24px;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+        }
+
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+        /* Sidebar */
+        aside { width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); padding: 24px; display: flex; flex-direction: column; flex-shrink: 0; }
+        .brand { font-size: 1.4rem; font-weight: 800; margin-bottom: 40px; color: var(--text-heading); letter-spacing: -0.5px; }
+        .brand span { color: var(--accent); }
+        
+        .menu-label { text-transform: uppercase; font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin-bottom: 12px; letter-spacing: 0.05em; }
+        .menu-item { padding: 12px 16px; margin-bottom: 6px; border-radius: 8px; color: var(--text-muted); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px; font-weight: 500; }
+        .menu-item:hover { background: var(--bg-hover); color: var(--text-heading); }
+        .menu-item.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
+        .menu-item svg { width: 20px; height: 20px; opacity: 0.8; }
+
+        /* Main Content */
+        main { flex: 1; overflow-y: auto; padding: 32px; position: relative; }
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
+        h1 { margin: 0; font-size: 1.8rem; font-weight: 700; color: var(--text-heading); }
+        .date-badge { background: var(--bg-card); padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; color: var(--text-muted); border: 1px solid var(--border-color); font-weight: 500; box-shadow: var(--shadow-sm); }
+
+        /* Dashboard Grid */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--grid-gap); margin-bottom: var(--grid-gap); }
+        .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--grid-gap); margin-bottom: var(--grid-gap); }
+        .tables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--grid-gap); }
+
+        /* Cards */
+        .card { background: var(--bg-card); border-radius: 12px; padding: 24px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); }
+        .card h3 { margin: 0 0 20px 0; font-size: 1rem; color: var(--text-heading); font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        
+        .card-interactive { cursor: pointer; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; position: relative; overflow: hidden; }
+        .card-interactive:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: var(--shadow-md); }
+        .card-interactive::after { content: 'Kliknij, aby zobaczyć szczegóły'; position: absolute; bottom: 12px; right: 12px; font-size: 0.7rem; color: var(--accent); opacity: 0; transition: opacity 0.2s; font-weight: 600; }
+        .card-interactive:hover::after { opacity: 1; }
+
+        .kpi-value { font-size: 2.5rem; font-weight: 800; color: var(--text-heading); margin-bottom: 4px; letter-spacing: -1px; }
+        .kpi-sub { font-size: 0.85rem; color: var(--text-muted); }
+
+        /* Tables */
+        .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border-color); }
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; color: var(--text-muted); padding: 16px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-color); background: var(--bg-hover); font-weight: 600; }
+        td { padding: 16px; border-bottom: 1px solid var(--border-color); color: var(--text-main); vertical-align: middle; }
+        tr:hover td { background: var(--bg-hover); }
+        tr:last-child td { border-bottom: none; }
+        
+        .clickable-row { cursor: pointer; transition: background 0.2s; }
+        .clickable-row:hover td { background: #f1f5f9; border-left: 3px solid var(--accent); padding-left: 13px; }
+        
+        .progress-bar { height: 6px; background: var(--border-color); border-radius: 3px; overflow: hidden; margin-top: 8px; }
+        .progress-fill { height: 100%; border-radius: 3px; }
+
+        /* Utilities */
+        .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); background: white; color: var(--text-main); cursor: pointer; transition: 0.2s; font-weight: 500; }
+        .btn-sm:hover { background: var(--bg-hover); border-color: var(--accent); color: var(--accent); }
+
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+        .bg-danger { background: #fef2f2; color: var(--danger); border: 1px solid #fee2e2; }
+        .bg-warning { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
+        .bg-success { background: #ecfdf5; color: #047857; border: 1px solid #d1fae5; }
+        .bg-info { background: #eff6ff; color: var(--accent); border: 1px solid #dbeafe; }
+        .bg-neutral { background: #f1f5f9; color: var(--text-muted); border: 1px solid #e2e8f0; }
+
+        .hidden { display: none !important; }
+        
+        #loader { position: fixed; inset: 0; background: var(--bg-body); z-index: 999; display: flex; justify-content: center; align-items: center; }
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--border-color); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s infinite linear; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Search Input */
+        .search-bar { margin-bottom: 20px; display: flex; gap: 12px; }
+        .search-input { background: white; border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px; color: var(--text-heading); width: 100%; max-width: 400px; outline: none; font-family: inherit; font-size: 0.9rem; transition: border-color 0.2s; box-shadow: var(--shadow-sm); }
+        .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+
+        /* ABC Classes */
+        .abc-tag { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 800; font-size: 0.7rem; border: 1px solid transparent; }
+        .abc-a { background: #ecfdf5; color: #047857; border-color: #d1fae5; }
+        .abc-b { background: #fffbeb; color: #b45309; border-color: #fef3c7; }
+        .abc-c { background: #f1f5f9; color: var(--text-muted); border-color: #e2e8f0; }
+
+        /* MODAL PRODUCT DETAILS */
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+        
+        /* FIX: Ensure Product Details is always on TOP of other modals */
+        #modal-product-details { z-index: 2000; }
+
+        .modal-backdrop.active { opacity: 1; pointer-events: all; }
+        .modal-content { background: var(--bg-card); width: 90%; max-width: 900px; max-height: 90vh; border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
+        .modal-header { padding: 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: flex-start; background: var(--bg-hover); }
+        .modal-body { padding: 24px; overflow-y: auto; }
+        .modal-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .detail-block { background: white; border-radius: 8px; padding: 20px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); }
+        .detail-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; margin-bottom: 6px; font-weight: 600; }
+        .detail-val { font-size: 1.2rem; font-weight: 700; color: var(--text-heading); margin-bottom: 16px; }
+        .detail-val:last-child { margin-bottom: 0; }
+        .close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: 0.2s; padding: 0; line-height: 1; }
+        .close-btn:hover { color: var(--danger); transform: rotate(90deg); }
+
+        @media (max-width: 1200px) {
+            .charts-grid, .tables-grid { grid-template-columns: 1fr; }
+            .modal-cols { grid-template-columns: 1fr; }
+            aside { width: 80px; padding: 12px; }
+            .menu-item span, .brand span, .menu-label { display: none; }
+            .menu-item { justify-content: center; }
+            .brand { font-size: 1rem; text-align: center; margin-bottom: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader"><div class="spinner"></div></div>
+
+    <!-- PRODUCT DETAILS MODAL -->
+    <div id="modal-product-details" class="modal-backdrop">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div>
+                    <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
+                        <span class="badge bg-info" id="detail-cat">Kategoria</span>
+                        <span class="abc-tag" id="detail-abc" style="width:20px; height:20px; font-size:0.7rem;">A</span>
+                    </div>
+                    <h2 style="margin:0; font-size:1.5rem; color:var(--text-heading);" id="detail-name">Nazwa Produktu</h2>
+                    <div style="color:var(--text-muted); font-family:monospace; margin-top:4px;" id="detail-ean">EAN: 123456789</div>
+                </div>
+                <button class="close-btn" onclick="Analytics.closeDetails('modal-product-details')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <!-- Stats Row -->
+                <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:24px;">
+                    <div class="detail-block" style="padding:16px;">
+                        <div class="detail-label">Stan Całkowity</div>
+                        <div class="detail-val" style="color:var(--accent); font-size:1.4rem;" id="detail-total">0</div>
+                    </div>
+                    <div class="detail-block" style="padding:16px;">
+                        <div class="detail-label">Minimum</div>
+                        <div class="detail-val" id="detail-min">0</div>
+                    </div>
+                    <div class="detail-block" style="padding:16px;">
+                        <div class="detail-label">Lokalizacja</div>
+                        <div class="detail-val" id="detail-loc">-</div>
+                    </div>
+                    <div class="detail-block" style="padding:16px;">
+                        <div class="detail-label">Szac. Zapas (Dni)</div>
+                        <div class="detail-val" id="detail-coverage">0 dni</div>
+                    </div>
+                </div>
+
+                <div class="modal-cols">
+                    <!-- Left: Batches -->
+                    <div>
+                        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
+                            Aktywne Partie (LOT)
+                        </h3>
+                        <div class="table-container" style="max-height:300px; overflow-y:auto; border:none;">
+                            <table id="detail-table-lots">
+                                <thead><tr><th>Nr Partii</th><th>Data Ważn.</th><th>Ilość</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Right: Product History -->
+                    <div>
+                        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                            Ostatnie Operacje
+                        </h3>
+                        <div class="table-container" style="max-height:300px; overflow-y:auto; border:none;">
+                            <table id="detail-table-history">
+                                <thead><tr><th>Data</th><th>Typ</th><th>Zmiana</th></tr></thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DOC DETAILS MODAL -->
+    <div id="modal-doc-details" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <div>
+                    <div style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;" id="doc-type-label">TYP DOKUMENTU</div>
+                    <h2 style="margin:0; font-size:1.4rem;" id="doc-ref-title">Dokument #123</h2>
+                    <div style="font-size:0.9rem; margin-top:4px; color:var(--accent);" id="doc-user-date">User | Data</div>
+                </div>
+                <button class="close-btn" onclick="Analytics.closeDetails('modal-doc-details')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-container" style="overflow-y:auto; border:none;">
+                    <table id="doc-items-table">
+                        <thead><tr><th>Produkt</th><th>Szczegóły (LOT)</th><th style="text-align:right;">Ilość</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+                <div style="margin-top:20px; text-align:right; font-size:1.1rem; color:var(--text-muted);">
+                    Łącznie pozycji: <strong style="color:var(--text-heading);" id="doc-total-items">0</strong>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- LOW STOCK REPORT MODAL -->
+    <div id="modal-low-stock" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <div>
+                    <div style="font-size:0.8rem; text-transform:uppercase; color:var(--danger); font-weight:700; margin-bottom:4px;">RAPORT ALARMOWY</div>
+                    <h2 style="margin:0; font-size:1.4rem;">Produkty Poniżej Minimum</h2>
+                </div>
+                <button class="close-btn" onclick="Analytics.closeDetails('modal-low-stock')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-container" style="overflow-y:auto; border:none;">
+                    <table id="table-low-stock-report">
+                        <thead><tr><th>Produkt</th><th>Kategoria</th><th>Min</th><th>Stan</th><th>Brakuje</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXPIRING BATCHES MODAL -->
+    <div id="modal-expiring" class="modal-backdrop">
+        <div class="modal-content" style="max-width: 800px;">
+            <div class="modal-header">
+                <div>
+                    <div style="font-size:0.8rem; text-transform:uppercase; color:var(--warning); font-weight:700; margin-bottom:4px;">RAPORT WAŻNOŚCI</div>
+                    <h2 style="margin:0; font-size:1.4rem;">Partie Wygasające (< 60 dni)</h2>
+                </div>
+                <button class="close-btn" onclick="Analytics.closeDetails('modal-expiring')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="table-container" style="overflow-y:auto; border:none;">
+                    <table id="table-expiring-report">
+                        <thead><tr><th>Produkt</th><th>Partia (LOT)</th><th>Data Ważności</th><th>Pozostało Dni</th><th>Ilość</th></tr></thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <aside>
+        <div class="brand">ALCHI Analityka</div>
+        
+        <div class="menu-label">Nawigacja</div>
+        <div class="menu-item active" onclick="App.router('dashboard', this)">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            <span>Główny Pulpit</span>
+        </div>
+        <div class="menu-item" onclick="App.router('warehouse', this)">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+            <span>Analiza Stanów</span>
+        </div>
+        <div class="menu-item" onclick="App.router('history', this)">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span>Pełna Historia</span>
+        </div>
+    </aside>
+
+    <main>
+        <header>
+            <div>
+                <h1 id="view-title">Raport Magazynowy</h1>
+            </div>
+            <div class="date-badge" id="current-date">--.--.----</div>
+        </header>
+
+        <!-- VIEW: DASHBOARD -->
+        <div id="view-dashboard">
+            <!-- KPI ROW -->
+            <div class="kpi-grid">
+                <div class="card">
+                    <h3>Łącznie Produktów <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg></h3>
+                    <div class="kpi-value" id="kpi-products">0</div>
+                    <div class="kpi-sub">Unikalne indeksy SKU</div>
+                </div>
+                <div class="card">
+                    <h3>Całkowity Stan <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg></h3>
+                    <div class="kpi-value" style="color:var(--accent)" id="kpi-stock">0</div>
+                    <div class="kpi-sub">Suma jednostek w magazynie</div>
+                </div>
+                <!-- CLICKABLE LOW STOCK -->
+                <div class="card card-interactive" onclick="Analytics.showLowStockReport()">
+                    <h3>Niski Stan (Alarm) <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></h3>
+                    <div class="kpi-value" style="color:var(--danger)" id="kpi-low">0</div>
+                    <div class="kpi-sub">Produkty poniżej minimum</div>
+                </div>
+                <!-- CLICKABLE EXPIRING -->
+                <div class="card card-interactive" onclick="Analytics.showExpiringReport()">
+                    <h3>Wygasające Partie <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></h3>
+                    <div class="kpi-value" style="color:var(--warning)" id="kpi-exp">0</div>
+                    <div class="kpi-sub">Termin ważności < 60 dni</div>
+                </div>
+            </div>
+
+            <!-- CHARTS ROW -->
+            <div class="charts-grid">
+                <div class="card">
+                    <h3>Dynamika Magazynu (Ostatnie 14 dni)</h3>
+                    <div style="height: 300px;">
+                        <canvas id="chart-movements"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Struktura Kategorii</h3>
+                    <div style="height: 300px; display:flex; justify-content:center;">
+                        <canvas id="chart-categories"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TABLES ROW -->
+            <div class="tables-grid">
+                <!-- EXPIRATION MONITOR -->
+                <div class="card">
+                    <h3 style="color:var(--danger)">
+                        <span>⚠️ Monitoring Ważności (Najbliższe)</span>
+                        <button class="btn-sm" onclick="Analytics.showExpiringReport()">Pokaż Wszystkie</button>
+                    </h3>
+                    <div class="table-container" style="border:none;">
+                        <table id="table-exp">
+                            <thead><tr><th>Produkt</th><th>Partia</th><th>Data Ważności</th><th>Stan</th></tr></thead>
+                            <tbody><!-- Rendered JS --></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- USER ACTIVITY -->
+                <div class="card">
+                    <h3 style="color:var(--accent)">
+                        <span>🏆 Aktywność Operatorów</span>
+                    </h3>
+                    <div class="table-container" style="border:none;">
+                        <table id="table-users">
+                            <thead><tr><th>Użytkownik</th><th>Liczba Operacji</th><th>Udział</th></tr></thead>
+                            <tbody><!-- Rendered JS --></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: WAREHOUSE OVERVIEW -->
+        <div id="view-warehouse" class="hidden">
+            <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 style="margin:0">Analiza Asortymentu</h3>
+                    <input type="text" id="search-warehouse" class="search-input" placeholder="Szukaj w analizach..." onkeyup="App.handleSearch(Analytics.renderWarehouse)">
+                </div>
+                <div class="table-container">
+                    <table id="table-warehouse">
+                        <thead>
+                            <tr>
+                                <th>Produkt</th>
+                                <th>EAN</th> <!-- NOWA KOLUMNA -->
+                                <th>Klasa ABC</th>
+                                <th>Stan Obecny</th>
+                                <th>Zużycie (30 dni)</th>
+                                <th>Pokrycie (Dni)</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- VIEW: HISTORY -->
+        <div id="view-history" class="hidden">
+             <div class="card">
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
+                    <h3 style="margin:0">Dziennik Operacji Magazynowych</h3>
+                    <input type="text" id="search-history" class="search-input" placeholder="Szukaj dokumentu, użytkownika..." onkeyup="App.handleSearch(Analytics.renderHistory)">
+                </div>
+                <div class="table-container">
+                    <table id="table-full-history">
+                        <thead>
+                            <tr>
+                                <th>Data</th>
+                                <th>Typ Operacji</th>
+                                <th>Dokument</th>
+                                <th>Użytkownik</th>
+                                <th>Szczegóły</th>
+                            </tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, onSnapshot, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+
+        const firebaseConfig = { apiKey: "AIzaSyAIWvoGZmqUbW-ZuBxHnLi4AVKkWOUb724", authDomain: "alchi-d1c38.firebaseapp.com", projectId: "alchi-d1c38", storageBucket: "alchi-d1c38.firebasestorage.app", messagingSenderId: "1049557849901", appId: "1:1049557849901:web:34258fac5872692acb65a4" };
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const auth = getAuth(app);
+
+        // Global state store
+        const state = { products: [], history: [], charts: {} };
+        let searchTimeout = null;
+
+        const App = {
+            init: async () => {
+                await signInAnonymously(auth);
+                document.getElementById('current-date').innerText = new Date().toLocaleDateString('pl-PL', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
+                App.startRealtimeListeners();
+            },
+            
+            handleSearch: (fn) => {
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(fn, 300);
+            },
+
+            startRealtimeListeners: () => {
+                // 1. Products Listener
+                onSnapshot(collection(db, "products"), (snapshot) => {
+                    state.products = snapshot.docs.map(d => {
+                        const dat = d.data();
+                        let total = 0;
+                        const hasBatches = (dat.hasBatches !== undefined) ? dat.hasBatches : true;
+                        if (hasBatches) total = (dat.lots || []).reduce((a,b) => a + (b.qty || 0), 0);
+                        else total = dat.simpleQty || 0;
+                        return { id: d.id, ...dat, total, hasBatches };
+                    });
+                    App.updateUI();
+                });
+
+                // 2. History Listener (Zwiększony limit do 2000 dla dokładniejszych statystyk)
+                const q = query(collection(db, "history"), orderBy("date", "desc"), limit(2000));
+                onSnapshot(q, (snapshot) => {
+                    state.history = snapshot.docs.map(d => {
+                        const data = d.data();
+                        // Bezpieczna konwersja daty
+                        let dateObj = new Date();
+                        if (data.date && typeof data.date.toDate === 'function') {
+                            try { dateObj = data.date.toDate(); } catch(e) {}
+                        }
+                        return { id: d.id, ...data, dateObj };
+                    });
+                    App.updateUI();
+                });
+            },
+
+            updateUI: () => {
+                Analytics.calculateABC();
+                Analytics.renderKPI();
+                Analytics.renderCharts();
+                Analytics.renderTables();
+                Analytics.renderWarehouse(); // preserves input value inside
+                Analytics.renderHistory();   // preserves input value inside
+                document.getElementById('loader').style.display = 'none';
+            },
+
+            router: (view, el) => {
+                // 1. Update Navigation
+                document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
+                el.classList.add('active');
+
+                // 2. Hide all views
+                ['view-dashboard', 'view-warehouse', 'view-history'].forEach(id => {
+                    document.getElementById(id).classList.add('hidden');
+                });
+
+                // 3. Show selected view
+                document.getElementById('view-' + view).classList.remove('hidden');
+
+                // 4. Update Header Title
+                const titles = {
+                    'dashboard': 'Raport Magazynowy',
+                    'warehouse': 'Analiza Stanów',
+                    'history': 'Dziennik Operacji'
+                };
+                document.getElementById('view-title').innerText = titles[view];
+            }
+        };
+
+        const Analytics = {
+            escapeHTML: (str) => {
+                if(!str) return '';
+                return String(str).replace(/[&<>'"]/g, 
+                    tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
+            },
+
+            calculateABC: () => {
+                // Logic: Obliczanie ABC na podstawie WOLUMENU (qty), a nie częstotliwości
+                
+                // Reset
+                state.products.forEach(p => p._usageQty30Days = 0);
+
+                const thirtyDaysAgo = new Date();
+                thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+                
+                state.history.forEach(h => {
+                    // Liczymy tylko wydania (WZ) z ostatnich 30 dni
+                    if(h.type === 'wz' && h.dateObj >= thirtyDaysAgo && h.items) {
+                        h.items.forEach(item => {
+                             const p = state.products.find(prod => prod.id === item.pid);
+                             if(p) p._usageQty30Days += (parseFloat(item.qty) || 0);
+                        });
+                    }
+                });
+
+                // Sortujemy wg Ilości
+                const sorted = [...state.products].sort((a,b) => b._usageQty30Days - a._usageQty30Days);
+                const totalItems = sorted.length;
+                
+                sorted.forEach((p, index) => {
+                    const percentile = (index + 1) / totalItems;
+                    if (percentile <= 0.2) p._abc = 'A';
+                    else if (percentile <= 0.5) p._abc = 'B';
+                    else p._abc = 'C';
+                });
+            },
+
+            renderKPI: () => {
+                const active = state.products.filter(p => !p.archived);
+                document.getElementById('kpi-products').innerText = active.length;
+                document.getElementById('kpi-stock').innerText = active.reduce((sum, p) => sum + p.total, 0).toLocaleString();
+                document.getElementById('kpi-low').innerText = active.filter(p => p.total <= (p.min || 5)).length;
+
+                const today = new Date();
+                const limitDate = new Date(); limitDate.setDate(today.getDate() + 60);
+                let expiringCount = 0;
+                active.filter(p => p.hasBatches && p.lots).forEach(p => {
+                    p.lots.forEach(l => {
+                        if(l.qty > 0 && l.exp) {
+                            const expDate = new Date(l.exp);
+                            if(expDate <= limitDate) expiringCount++;
+                        }
+                    });
+                });
+                document.getElementById('kpi-exp').innerText = expiringCount;
+            },
+
+            renderCharts: () => {
+                // Zmienione kolory dla jasnego motywu
+                Chart.defaults.color = '#64748b'; 
+                Chart.defaults.borderColor = '#e2e8f0';
+
+                // Chart 1: Categories
+                const catMap = {};
+                state.products.filter(p => !p.archived).forEach(p => { catMap[p.cat] = (catMap[p.cat] || 0) + p.total; });
+                
+                if (state.charts.categories) state.charts.categories.destroy();
+                state.charts.categories = new Chart(document.getElementById('chart-categories'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: Object.keys(catMap),
+                        datasets: [{ data: Object.values(catMap), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], borderWidth: 0 }]
+                    },
+                    options: { responsive: true, plugins: { legend: { position: 'right', labels: { usePointStyle: true, padding: 20 } } } }
+                });
+
+                // Chart 2: Movements
+                const days = {};
+                for(let i=13; i>=0; i--) {
+                    const d = new Date(); d.setDate(d.getDate() - i);
+                    days[d.toLocaleDateString('pl-PL')] = { pz: 0, wz: 0 };
+                }
+                state.history.forEach(h => {
+                    if(!h.dateObj) return;
+                    const dStr = h.dateObj.toLocaleDateString('pl-PL');
+                    if(days[dStr]) {
+                        if(h.type === 'pz') days[dStr].pz++;
+                        if(h.type === 'wz') days[dStr].wz++;
+                    }
+                });
+                
+                if (state.charts.movements) state.charts.movements.destroy();
+                state.charts.movements = new Chart(document.getElementById('chart-movements'), {
+                    type: 'bar',
+                    data: {
+                        labels: Object.keys(days),
+                        datasets: [
+                            { label: 'Przyjęcia (PZ)', data: Object.values(days).map(x=>x.pz), backgroundColor: '#10b981', borderRadius: 4 },
+                            { label: 'Wydania (WZ)', data: Object.values(days).map(x=>x.wz), backgroundColor: '#3b82f6', borderRadius: 4 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { y: { grid: { display: true, borderDash: [2, 2] } }, x: { grid: { display: false } } },
+                        plugins: { legend: { labels: { usePointStyle: true } } }
+                    }
+                });
+            },
+
+            renderTables: () => {
+                // Exp Table
+                const batches = [];
+                const today = new Date();
+                state.products.filter(p => !p.archived && p.hasBatches).forEach(p => {
+                    (p.lots||[]).forEach(l => {
+                        if(l.qty > 0 && l.exp) {
+                            const d = new Date(l.exp);
+                            const diffTime = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+                            if(diffTime < 90) batches.push({ name: p.name, lot: l.lot, exp: l.exp, qty: l.qty, days: diffTime });
+                        }
+                    });
+                });
+                batches.sort((a,b) => a.days - b.days);
+                document.querySelector('#table-exp tbody').innerHTML = batches.slice(0, 6).map(b => `
+                    <tr><td>${Analytics.escapeHTML(b.name)}</td><td><span class="badge bg-neutral">${Analytics.escapeHTML(b.lot)}</span></td><td style="color:${b.days<0?'#ef4444':(b.days<30?'#f59e0b':'inherit')}">${b.exp} (${b.days} dni)</td><td>${b.qty}</td></tr>
+                `).join('') || '<tr><td colspan="4" style="text-align:center; color:var(--text-muted)">Brak zagrożonych partii</td></tr>';
+
+                // Users Table
+                const userMap = {};
+                state.history.forEach(h => { userMap[h.user || 'Nieznany'] = (userMap[h.user || 'Nieznany'] || 0) + 1; });
+                const sortedUsers = Object.entries(userMap).sort((a,b) => b[1] - a[1]);
+                const maxOps = sortedUsers[0] ? sortedUsers[0][1] : 1;
+                document.querySelector('#table-users tbody').innerHTML = sortedUsers.slice(0, 5).map(([u, c]) => `
+                    <tr><td style="font-weight:600;">${Analytics.escapeHTML(u)}</td><td>${c}</td><td style="width:120px;"><div class="progress-bar"><div class="progress-fill" style="width:${(c/maxOps)*100}%; background:var(--accent);"></div></div></td></tr>
+                `).join('');
+            },
+
+            renderWarehouse: () => {
+                const searchEl = document.getElementById('search-warehouse');
+                const q = searchEl ? searchEl.value.toLowerCase() : '';
+                
+                const tbody = document.querySelector('#table-warehouse tbody');
+                const filtered = state.products.filter(p => !p.archived && (p.name.toLowerCase().includes(q) || (p.ean||'').includes(q)));
+                
+                if(filtered.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted)">Brak wyników</td></tr>';
+                    return;
+                }
+
+                const html = filtered.map(p => {
+                    const dailyUsage = p._usageQty30Days / 30;
+                    let coverage = '∞';
+                    let coverageColor = 'bg-neutral';
+                    let coverageDays = 9999;
+                    
+                    if(dailyUsage > 0) {
+                        coverageDays = Math.round(p.total / dailyUsage);
+                        coverage = coverageDays + ' dni';
+                        if(coverageDays < 7) coverageColor = 'bg-danger';
+                        else if(coverageDays < 14) coverageColor = 'bg-warning';
+                        else coverageColor = 'bg-success';
+                    } else if (p.total === 0) {
+                         coverage = '0 dni';
+                         coverageColor = 'bg-danger';
+                    }
+
+                    const abcClass = p._abc === 'A' ? 'abc-a' : (p._abc === 'B' ? 'abc-b' : 'abc-c');
+                    p._coverageDays = coverageDays;
+
+                    return `
+                    <tr class="clickable-row" onclick="Analytics.openDetails('${p.id}')">
+                        <td>
+                            <div style="font-weight:600;">${Analytics.escapeHTML(p.name)}</div>
+                        </td>
+                        <td>
+                            <div style="font-family:monospace; color:var(--text-muted);">${Analytics.escapeHTML(p.ean || '-')}</div>
+                        </td>
+                        <td><div class="abc-tag ${abcClass}">${p._abc}</div></td>
+                        <td style="font-weight:700; font-size:1rem;">${p.total} <span style="font-size:0.75rem; font-weight:400; color:var(--text-muted)">${p.unit}</span></td>
+                        <td>${parseFloat(p._usageQty30Days).toFixed(1)}</td>
+                        <td><span class="badge ${coverageColor}">${coverage}</span></td>
+                        <td>${p.total <= (p.min||5) ? '<span class="badge bg-danger">Niski Stan</span>' : '<span class="badge bg-success">W Normie</span>'}</td>
+                    </tr>
+                    `;
+                }).join('');
+                tbody.innerHTML = html;
+            },
+
+            renderHistory: () => {
+                const searchEl = document.getElementById('search-history');
+                const q = searchEl ? searchEl.value.toLowerCase() : '';
+
+                const tbody = document.querySelector('#table-full-history tbody');
+                const filtered = state.history.filter(h => (h.doc||'').toLowerCase().includes(q) || (h.user||'').toLowerCase().includes(q));
+
+                if(filtered.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted)">Brak wyników</td></tr>';
+                    return;
+                }
+
+                const html = filtered.map(h => {
+                    const badge = h.type === 'pz' ? 'bg-success' : 'bg-info';
+                    const typeLabel = h.type === 'pz' ? 'Przyjęcie (PZ)' : 'Wydanie (WZ)';
+                    const dateStr = h.dateObj ? h.dateObj.toLocaleString('pl-PL', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'numeric', year: 'numeric' }) : '-';
+                    
+                    return `
+                    <tr>
+                        <td style="color:var(--text-muted); font-size:0.85rem;">${dateStr}</td>
+                        <td><span class="badge ${badge}">${typeLabel}</span></td>
+                        <td style="font-weight:600;">${Analytics.escapeHTML(h.doc)}</td>
+                        <td>${Analytics.escapeHTML(h.user)}</td>
+                        <td>
+                            <button class="btn-sm" onclick="Analytics.openDocDetails('${h.id}')">
+                                Podgląd Dokumentu
+                            </button>
+                        </td>
+                    </tr>
+                    `;
+                }).join('');
+                tbody.innerHTML = html;
+            },
+
+            // --- INTERACTIVE REPORT FUNCTIONS ---
+            showLowStockReport: () => {
+                const lowStockItems = state.products.filter(p => !p.archived && p.total <= (p.min || 5));
+                const tbody = document.querySelector('#table-low-stock-report tbody');
+                
+                if(lowStockItems.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--success);">Brak produktów poniżej minimum! Wszystko w normie.</td></tr>';
+                } else {
+                    tbody.innerHTML = lowStockItems.map(p => `
+                        <tr class="clickable-row" onclick="Analytics.openDetails('${p.id}')">
+                            <td style="font-weight:600;">${Analytics.escapeHTML(p.name)}</td>
+                            <td><span class="badge bg-neutral">${Analytics.escapeHTML(p.cat)}</span></td>
+                            <td>${p.min}</td>
+                            <td style="color:var(--danger); font-weight:700;">${p.total}</td>
+                            <td>${(p.min - p.total)}</td>
+                        </tr>
+                    `).join('');
+                }
+                document.getElementById('modal-low-stock').classList.add('active');
+            },
+
+            showExpiringReport: () => {
+                const batches = [];
+                const today = new Date();
+                state.products.filter(p => !p.archived && p.hasBatches).forEach(p => {
+                    (p.lots||[]).forEach(l => {
+                        if(l.qty > 0 && l.exp) {
+                            const d = new Date(l.exp);
+                            const diffTime = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
+                            if(diffTime < 60) batches.push({ pid: p.id, name: p.name, lot: l.lot, exp: l.exp, qty: l.qty, days: diffTime });
+                        }
+                    });
+                });
+                batches.sort((a,b) => a.days - b.days);
+
+                const tbody = document.querySelector('#table-expiring-report tbody');
+                
+                if(batches.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--success);">Brak partii wygasających w ciągu 60 dni.</td></tr>';
+                } else {
+                    tbody.innerHTML = batches.map(b => {
+                        let color = 'var(--text-main)';
+                        if(b.days < 0) color = '#ef4444';
+                        else if(b.days < 30) color = '#f59e0b';
+                        
+                        return `
+                        <tr class="clickable-row" onclick="Analytics.openDetails('${b.pid}')">
+                            <td style="font-weight:600;">${Analytics.escapeHTML(b.name)}</td>
+                            <td><span class="badge bg-neutral">${Analytics.escapeHTML(b.lot)}</span></td>
+                            <td style="color:${color}; font-weight:600;">${b.exp}</td>
+                            <td style="color:${color};">${b.days} dni</td>
+                            <td style="font-weight:700;">${b.qty}</td>
+                        </tr>
+                        `;
+                    }).join('');
+                }
+                document.getElementById('modal-expiring').classList.add('active');
+            },
+
+            openDocDetails: (docDbId) => {
+                const docData = state.history.find(h => h.id === docDbId);
+                if(!docData) return;
+
+                document.getElementById('doc-type-label').innerText = docData.type === 'pz' ? 'Przyjęcie Zewnętrzne' : 'Wydanie Zewnętrzne';
+                document.getElementById('doc-ref-title').innerText = docData.doc;
+                document.getElementById('doc-user-date').innerText = `${docData.user} | ${docData.dateObj?.toLocaleString('pl-PL')}`;
+
+                const tbody = document.querySelector('#doc-items-table tbody');
+                if(!docData.items || docData.items.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px;">Brak pozycji w dokumencie</td></tr>';
+                    document.getElementById('doc-total-items').innerText = '0';
+                } else {
+                    let totalItems = 0;
+                    tbody.innerHTML = docData.items.map(item => {
+                        totalItems += (item.qty || 0);
+                        const isSimple = !item.lot;
+                        return `
+                        <tr>
+                            <td style="font-weight:600;">${Analytics.escapeHTML(item.name)}</td>
+                            <td>
+                                ${isSimple 
+                                  ? '<span style="color:var(--text-muted); font-size:0.8rem;">Standard</span>' 
+                                  : `<div><span class="badge bg-neutral">LOT: ${Analytics.escapeHTML(item.lot)}</span></div><div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Exp: ${item.exp}</div>`
+                                }
+                            </td>
+                            <td style="text-align:right; font-weight:700; color:${docData.type==='pz'?'var(--success)':'var(--accent)'};">
+                                ${item.qty}
+                            </td>
+                        </tr>
+                        `;
+                    }).join('');
+                    document.getElementById('doc-total-items').innerText = totalItems;
+                }
+
+                document.getElementById('modal-doc-details').classList.add('active');
+            },
+
+            openDetails: (pid) => {
+                const p = state.products.find(x => x.id === pid);
+                if (!p) return;
+
+                // Close other modals if open (e.g. low stock report) to prevent stacking issues
+                document.querySelectorAll('.modal-backdrop').forEach(m => {
+                    if(m.id !== 'modal-product-details') m.classList.remove('active');
+                });
+
+                document.getElementById('detail-name').innerText = p.name;
+                document.getElementById('detail-cat').innerText = p.cat || 'Ogólna';
+                document.getElementById('detail-ean').innerText = `EAN: ${p.ean || '-'}`;
+                document.getElementById('detail-abc').innerText = p._abc || '-';
+                document.getElementById('detail-abc').className = `abc-tag ${p._abc==='A'?'abc-a':(p._abc==='B'?'abc-b':'abc-c')}`;
+
+                document.getElementById('detail-total').innerText = `${p.total} ${p.unit}`;
+                document.getElementById('detail-min').innerText = p.min || 0;
+                document.getElementById('detail-loc').innerText = p.loc || '-';
+                
+                // Use pre-calculated coverage from renderWarehouse if available, else recalc
+                let coverage = '∞';
+                const dailyUsage = p._usageQty30Days / 30;
+                if(dailyUsage > 0) coverage = Math.round(p.total / dailyUsage) + ' dni';
+                else if(p.total === 0) coverage = '0 dni';
+                document.getElementById('detail-coverage').innerText = coverage;
+
+                // Lots Table
+                const tbodyLots = document.querySelector('#detail-table-lots tbody');
+                if (!p.hasBatches) {
+                    tbodyLots.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-muted)">Produkt w trybie prostym (bez partii)</td></tr>`;
+                } else {
+                    const lots = (p.lots || []).filter(l => l.qty > 0).sort((a,b) => new Date(a.exp) - new Date(b.exp));
+                    if(lots.length === 0) {
+                          tbodyLots.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-muted)">Brak stanów magazynowych</td></tr>`;
+                    } else {
+                        tbodyLots.innerHTML = lots.map(l => {
+                            const days = Math.ceil((new Date(l.exp) - new Date()) / (1000 * 60 * 60 * 24));
+                            const color = days < 0 ? '#ef4444' : (days < 30 ? '#f59e0b' : 'inherit');
+                            return `<tr><td><span class="badge bg-neutral">${Analytics.escapeHTML(l.lot)}</span></td><td style="color:${color}">${l.exp} (${days} dni)</td><td style="font-weight:700;">${l.qty}</td></tr>`;
+                        }).join('');
+                    }
+                }
+
+                // History Table
+                const tbodyHist = document.querySelector('#detail-table-history tbody');
+                const prodHistory = state.history.filter(h => h.items && h.items.some(i => i.pid === pid));
+                
+                if(prodHistory.length === 0) {
+                      tbodyHist.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-muted)">Brak historii operacji</td></tr>`;
+                } else {
+                    tbodyHist.innerHTML = prodHistory.slice(0, 20).map(h => {
+                        const item = h.items.find(i => i.pid === pid);
+                        const qty = item ? item.qty : 0;
+                        const isPZ = h.type === 'pz';
+                        const badge = isPZ ? 'bg-success' : 'bg-info';
+                        const sign = isPZ ? '+' : '-';
+                        const label = isPZ ? 'PZ' : 'WZ';
+                        
+                        return `
+                        <tr>
+                            <td style="font-size:0.85rem; color:var(--text-muted);">${h.dateObj?.toLocaleDateString() || '-'}</td>
+                            <td><span class="badge ${badge}">${label}</span></td>
+                            <td style="font-weight:600; color:${isPZ?'var(--success)':'var(--accent)'}">${sign}${qty}</td>
+                        </tr>
+                        `;
+                    }).join('');
+                }
+
+                document.getElementById('modal-product-details').classList.add('active');
+            },
+
+            closeDetails: (id) => {
+                document.getElementById(id).classList.remove('active');
+            }
+        };
+
+        window.App = App;
+        window.Analytics = Analytics;
+
+        App.init();
+    </script>
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALCHI Analityka v2.1</title>
+    <title>ALCHI Analityka v2.2</title>
     
     <!-- Fonty & Chart.js -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -87,10 +87,12 @@
         .progress-fill { height: 100%; border-radius: 3px; }
 
         /* Utilities */
-        .btn-sm { padding: 6px 12px; font-size: 0.8rem; border-radius: 6px; border: 1px solid var(--border-color); background: white; color: var(--text-main); cursor: pointer; transition: 0.2s; font-weight: 500; }
+        .btn-sm { padding: 8px 16px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: white; color: var(--text-main); cursor: pointer; transition: 0.2s; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
         .btn-sm:hover { background: var(--bg-hover); border-color: var(--accent); color: var(--accent); }
+        .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
+        .btn-primary:hover { background: #1d4ed8; color: white; }
 
-        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-block; }
+        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-block; white-space: nowrap; }
         .bg-danger { background: #fef2f2; color: var(--danger); border: 1px solid #fee2e2; }
         .bg-warning { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
         .bg-success { background: #ecfdf5; color: #047857; border: 1px solid #d1fae5; }
@@ -103,10 +105,13 @@
         .spinner { width: 40px; height: 40px; border: 4px solid var(--border-color); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s infinite linear; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Search Input */
-        .search-bar { margin-bottom: 20px; display: flex; gap: 12px; }
-        .search-input { background: white; border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px; color: var(--text-heading); width: 100%; max-width: 400px; outline: none; font-family: inherit; font-size: 0.9rem; transition: border-color 0.2s; box-shadow: var(--shadow-sm); }
+        /* Controls Row */
+        .controls-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+        .search-input { background: white; border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px; color: var(--text-heading); width: 100%; min-width: 250px; flex: 1; outline: none; font-family: inherit; font-size: 0.9rem; transition: border-color 0.2s; box-shadow: var(--shadow-sm); }
         .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
+        
+        .select-filter { background: white; border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px; color: var(--text-heading); outline: none; font-family: inherit; font-size: 0.9rem; min-width: 200px; cursor: pointer; box-shadow: var(--shadow-sm); }
+        .select-filter:focus { border-color: var(--accent); }
 
         /* ABC Classes */
         .abc-tag { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 800; font-size: 0.7rem; border: 1px solid transparent; }
@@ -139,6 +144,8 @@
             .menu-item span, .brand span, .menu-label { display: none; }
             .menu-item { justify-content: center; }
             .brand { font-size: 1rem; text-align: center; margin-bottom: 24px; }
+            .controls-row { flex-direction: column; }
+            .select-filter { width: 100%; }
         }
     </style>
 </head>
@@ -152,7 +159,7 @@
             <div class="modal-header">
                 <div>
                     <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
-                        <span class="badge bg-info" id="detail-cat">Kategoria</span>
+                        <span class="badge" id="detail-cat-badge">Kategoria</span>
                         <span class="abc-tag" id="detail-abc" style="width:20px; height:20px; font-size:0.7rem;">A</span>
                     </div>
                     <h2 style="margin:0; font-size:1.5rem; color:var(--text-heading);" id="detail-name">Nazwa Produktu</h2>
@@ -387,15 +394,28 @@
             <div class="card">
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
                     <h3 style="margin:0">Analiza Asortymentu</h3>
-                    <input type="text" id="search-warehouse" class="search-input" placeholder="Szukaj w analizach..." onkeyup="App.handleSearch(Analytics.renderWarehouse)">
                 </div>
+                
+                <!-- NEW: Filter & Search Row -->
+                <div class="controls-row">
+                    <input type="text" id="search-warehouse" class="search-input" placeholder="Szukaj nazwy, EAN..." onkeyup="App.handleSearch(Analytics.renderWarehouse)">
+                    <select id="filter-category" class="select-filter" onchange="Analytics.renderWarehouse()">
+                        <option value="all">Wszystkie Kategorie</option>
+                        <!-- Populated by JS -->
+                    </select>
+                    <button class="btn-sm btn-primary" onclick="Analytics.exportToCSV()">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        Eksportuj CSV
+                    </button>
+                </div>
+
                 <div class="table-container">
                     <table id="table-warehouse">
                         <thead>
                             <tr>
                                 <th>Produkt</th>
-                                <th>EAN</th> <!-- NOWA KOLUMNA -->
-                                <th>Klasa ABC</th>
+                                <th>EAN</th>
+                                <th>Kategoria</th>
                                 <th>Stan Obecny</th>
                                 <th>Zużycie (30 dni)</th>
                                 <th>Pokrycie (Dni)</th>
@@ -445,7 +465,7 @@
         const auth = getAuth(app);
 
         // Global state store
-        const state = { products: [], history: [], charts: {} };
+        const state = { products: [], history: [], charts: {}, categories: [] };
         let searchTimeout = null;
 
         const App = {
@@ -471,15 +491,28 @@
                         else total = dat.simpleQty || 0;
                         return { id: d.id, ...dat, total, hasBatches };
                     });
+
+                    // Extract unique categories
+                    const uniqueCats = [...new Set(state.products.map(p => p.cat).filter(Boolean))].sort();
+                    state.categories = uniqueCats;
+                    
+                    // Update dropdown
+                    const select = document.getElementById('filter-category');
+                    if(select) {
+                        const currentVal = select.value;
+                        select.innerHTML = `<option value="all">Wszystkie Kategorie (${state.products.length})</option>` + 
+                            uniqueCats.map(c => `<option value="${c}">${c}</option>`).join('');
+                        select.value = currentVal; // preserve selection if possible
+                    }
+
                     App.updateUI();
                 });
 
-                // 2. History Listener (Zwiększony limit do 2000 dla dokładniejszych statystyk)
+                // 2. History Listener
                 const q = query(collection(db, "history"), orderBy("date", "desc"), limit(2000));
                 onSnapshot(q, (snapshot) => {
                     state.history = snapshot.docs.map(d => {
                         const data = d.data();
-                        // Bezpieczna konwersja daty
                         let dateObj = new Date();
                         if (data.date && typeof data.date.toDate === 'function') {
                             try { dateObj = data.date.toDate(); } catch(e) {}
@@ -495,25 +528,18 @@
                 Analytics.renderKPI();
                 Analytics.renderCharts();
                 Analytics.renderTables();
-                Analytics.renderWarehouse(); // preserves input value inside
-                Analytics.renderHistory();   // preserves input value inside
+                Analytics.renderWarehouse(); 
+                Analytics.renderHistory();   
                 document.getElementById('loader').style.display = 'none';
             },
 
             router: (view, el) => {
-                // 1. Update Navigation
                 document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
                 el.classList.add('active');
-
-                // 2. Hide all views
                 ['view-dashboard', 'view-warehouse', 'view-history'].forEach(id => {
                     document.getElementById(id).classList.add('hidden');
                 });
-
-                // 3. Show selected view
                 document.getElementById('view-' + view).classList.remove('hidden');
-
-                // 4. Update Header Title
                 const titles = {
                     'dashboard': 'Raport Magazynowy',
                     'warehouse': 'Analiza Stanów',
@@ -530,17 +556,75 @@
                     tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
             },
 
-            calculateABC: () => {
-                // Logic: Obliczanie ABC na podstawie WOLUMENU (qty), a nie częstotliwości
-                
-                // Reset
-                state.products.forEach(p => p._usageQty30Days = 0);
+            getCategoryColor: (str) => {
+                if(!str) return { bg: '#f1f5f9', border: '#e2e8f0', text: '#64748b' };
+                // Simple hash to color (Pastel palette)
+                const colors = [
+                    { bg: '#eff6ff', border: '#dbeafe', text: '#2563eb' }, // Blue
+                    { bg: '#ecfdf5', border: '#d1fae5', text: '#059669' }, // Green
+                    { bg: '#fef3c7', border: '#fde68a', text: '#d97706' }, // Amber
+                    { bg: '#f3e8ff', border: '#e9d5ff', text: '#7c3aed' }, // Purple
+                    { bg: '#ffe4e6', border: '#fecdd3', text: '#e11d48' }, // Rose
+                    { bg: '#e0f2fe', border: '#bae6fd', text: '#0284c7' }, // Sky
+                ];
+                let hash = 0;
+                for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
+                const index = Math.abs(hash) % colors.length;
+                return colors[index];
+            },
 
+            exportToCSV: () => {
+                const searchEl = document.getElementById('search-warehouse');
+                const catEl = document.getElementById('filter-category');
+                const q = searchEl ? searchEl.value.toLowerCase() : '';
+                const cat = catEl ? catEl.value : 'all';
+
+                // Get currently filtered data
+                const filtered = state.products.filter(p => {
+                    if (p.archived) return false;
+                    const matchesSearch = p.name.toLowerCase().includes(q) || (p.ean||'').includes(q);
+                    const matchesCat = cat === 'all' || p.cat === cat;
+                    return matchesSearch && matchesCat;
+                });
+
+                if(filtered.length === 0) {
+                    alert("Brak danych do eksportu.");
+                    return;
+                }
+
+                // Create CSV Content
+                const headers = ["Nazwa Produktu", "EAN", "Kategoria", "Stan", "Jednostka", "Klasa ABC", "Zużycie 30dni", "Pokrycie (dni)"];
+                const rows = filtered.map(p => [
+                    `"${p.name.replace(/"/g, '""')}"`,
+                    `"${p.ean || ''}"`,
+                    `"${p.cat || ''}"`,
+                    p.total,
+                    p.unit,
+                    p._abc,
+                    p._usageQty30Days.toFixed(1),
+                    p._coverageDays === 9999 ? "∞" : p._coverageDays
+                ]);
+
+                const csvContent = "\uFEFF" + [headers.join(";"), ...rows.map(r => r.join(";"))].join("\n");
+                
+                // Download
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement("a");
+                link.setAttribute("href", url);
+                link.setAttribute("download", `Analiza_Stanow_${new Date().toISOString().slice(0,10)}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            },
+
+            calculateABC: () => {
+                state.products.forEach(p => p._usageQty30Days = 0);
                 const thirtyDaysAgo = new Date();
                 thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
                 
                 state.history.forEach(h => {
-                    // Liczymy tylko wydania (WZ) z ostatnich 30 dni
                     if(h.type === 'wz' && h.dateObj >= thirtyDaysAgo && h.items) {
                         h.items.forEach(item => {
                              const p = state.products.find(prod => prod.id === item.pid);
@@ -548,11 +632,8 @@
                         });
                     }
                 });
-
-                // Sortujemy wg Ilości
                 const sorted = [...state.products].sort((a,b) => b._usageQty30Days - a._usageQty30Days);
                 const totalItems = sorted.length;
-                
                 sorted.forEach((p, index) => {
                     const percentile = (index + 1) / totalItems;
                     if (percentile <= 0.2) p._abc = 'A';
@@ -582,11 +663,9 @@
             },
 
             renderCharts: () => {
-                // Zmienione kolory dla jasnego motywu
                 Chart.defaults.color = '#64748b'; 
                 Chart.defaults.borderColor = '#e2e8f0';
 
-                // Chart 1: Categories
                 const catMap = {};
                 state.products.filter(p => !p.archived).forEach(p => { catMap[p.cat] = (catMap[p.cat] || 0) + p.total; });
                 
@@ -600,7 +679,6 @@
                     options: { responsive: true, plugins: { legend: { position: 'right', labels: { usePointStyle: true, padding: 20 } } } }
                 });
 
-                // Chart 2: Movements
                 const days = {};
                 for(let i=13; i>=0; i--) {
                     const d = new Date(); d.setDate(d.getDate() - i);
@@ -634,7 +712,6 @@
             },
 
             renderTables: () => {
-                // Exp Table
                 const batches = [];
                 const today = new Date();
                 state.products.filter(p => !p.archived && p.hasBatches).forEach(p => {
@@ -651,7 +728,6 @@
                     <tr><td>${Analytics.escapeHTML(b.name)}</td><td><span class="badge bg-neutral">${Analytics.escapeHTML(b.lot)}</span></td><td style="color:${b.days<0?'#ef4444':(b.days<30?'#f59e0b':'inherit')}">${b.exp} (${b.days} dni)</td><td>${b.qty}</td></tr>
                 `).join('') || '<tr><td colspan="4" style="text-align:center; color:var(--text-muted)">Brak zagrożonych partii</td></tr>';
 
-                // Users Table
                 const userMap = {};
                 state.history.forEach(h => { userMap[h.user || 'Nieznany'] = (userMap[h.user || 'Nieznany'] || 0) + 1; });
                 const sortedUsers = Object.entries(userMap).sort((a,b) => b[1] - a[1]);
@@ -663,10 +739,18 @@
 
             renderWarehouse: () => {
                 const searchEl = document.getElementById('search-warehouse');
+                const catEl = document.getElementById('filter-category');
                 const q = searchEl ? searchEl.value.toLowerCase() : '';
+                const cat = catEl ? catEl.value : 'all';
                 
                 const tbody = document.querySelector('#table-warehouse tbody');
-                const filtered = state.products.filter(p => !p.archived && (p.name.toLowerCase().includes(q) || (p.ean||'').includes(q)));
+                
+                const filtered = state.products.filter(p => {
+                    if (p.archived) return false;
+                    const matchesSearch = p.name.toLowerCase().includes(q) || (p.ean||'').includes(q);
+                    const matchesCat = cat === 'all' || p.cat === cat;
+                    return matchesSearch && matchesCat;
+                });
                 
                 if(filtered.length === 0) {
                     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted)">Brak wyników</td></tr>';
@@ -692,6 +776,8 @@
 
                     const abcClass = p._abc === 'A' ? 'abc-a' : (p._abc === 'B' ? 'abc-b' : 'abc-c');
                     p._coverageDays = coverageDays;
+                    const catColors = Analytics.getCategoryColor(p.cat || 'Inne');
+                    const catStyle = `background:${catColors.bg}; color:${catColors.text}; border:1px solid ${catColors.border}`;
 
                     return `
                     <tr class="clickable-row" onclick="Analytics.openDetails('${p.id}')">
@@ -701,7 +787,7 @@
                         <td>
                             <div style="font-family:monospace; color:var(--text-muted);">${Analytics.escapeHTML(p.ean || '-')}</div>
                         </td>
-                        <td><div class="abc-tag ${abcClass}">${p._abc}</div></td>
+                        <td><span class="badge" style="${catStyle}">${Analytics.escapeHTML(p.cat || 'Inne')}</span></td>
                         <td style="font-weight:700; font-size:1rem;">${p.total} <span style="font-size:0.75rem; font-weight:400; color:var(--text-muted)">${p.unit}</span></td>
                         <td>${parseFloat(p._usageQty30Days).toFixed(1)}</td>
                         <td><span class="badge ${coverageColor}">${coverage}</span></td>
@@ -853,7 +939,6 @@
                 });
 
                 document.getElementById('detail-name').innerText = p.name;
-                document.getElementById('detail-cat').innerText = p.cat || 'Ogólna';
                 document.getElementById('detail-ean').innerText = `EAN: ${p.ean || '-'}`;
                 document.getElementById('detail-abc').innerText = p._abc || '-';
                 document.getElementById('detail-abc').className = `abc-tag ${p._abc==='A'?'abc-a':(p._abc==='B'?'abc-b':'abc-c')}`;
@@ -862,6 +947,12 @@
                 document.getElementById('detail-min').innerText = p.min || 0;
                 document.getElementById('detail-loc').innerText = p.loc || '-';
                 
+                // Colorize category badge in modal
+                const catColors = Analytics.getCategoryColor(p.cat || 'Inne');
+                const catBadge = document.getElementById('detail-cat-badge');
+                catBadge.innerText = p.cat || 'Inne';
+                catBadge.style = `background:${catColors.bg}; color:${catColors.text}; border:1px solid ${catColors.border}`;
+
                 // Use pre-calculated coverage from renderWarehouse if available, else recalc
                 let coverage = '∞';
                 const dailyUsage = p._usageQty30Days / 30;

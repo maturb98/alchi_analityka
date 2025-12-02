@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ALCHI Analityka v2.2</title>
+    <title>ALCHI Analityka v3.1 (Sortable)</title>
     
     <!-- Fonty & Chart.js -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -11,11 +11,10 @@
     
     <style>
         :root {
-            /* Nowy schemat kolorów: Light / Clean */
-            --bg-body: #f1f5f9;       /* Slate 100 */
-            --bg-card: #ffffff;       /* White */
-            --bg-sidebar: #ffffff;    /* White */
-            --bg-hover: #f8fafc;      /* Slate 50 */
+            --bg-body: #f8fafc;       /* Slate 50 */
+            --bg-card: #ffffff;       
+            --bg-sidebar: #ffffff;    
+            --bg-hover: #f1f5f9;      /* Slate 100 */
             
             --text-main: #334155;     /* Slate 700 */
             --text-heading: #0f172a;  /* Slate 900 */
@@ -23,7 +22,8 @@
             
             --border-color: #e2e8f0;  /* Slate 200 */
             
-            --accent: #2563eb;        /* Blue 600 */
+            --accent: #3b82f6;        /* Blue 500 */
+            --accent-dark: #2563eb;   /* Blue 600 */
             --accent-light: #eff6ff;  /* Blue 50 */
             
             --success: #10b981;
@@ -31,68 +31,117 @@
             --warning: #f59e0b;
             
             --grid-gap: 24px;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --sidebar-width: 260px;
+            --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
             --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
-        * { box-sizing: border-box; }
+        * { box-sizing: border-box; outline: none; }
+        
         body { margin: 0; font-family: 'Inter', sans-serif; background: var(--bg-body); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
 
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
         /* Sidebar */
-        aside { width: 260px; background: var(--bg-sidebar); border-right: 1px solid var(--border-color); padding: 24px; display: flex; flex-direction: column; flex-shrink: 0; }
-        .brand { font-size: 1.4rem; font-weight: 800; margin-bottom: 40px; color: var(--text-heading); letter-spacing: -0.5px; }
-        .brand span { color: var(--accent); }
+        aside { 
+            width: var(--sidebar-width); 
+            background: var(--bg-sidebar); 
+            border-right: 1px solid var(--border-color); 
+            padding: 24px; 
+            display: flex; 
+            flex-direction: column; 
+            flex-shrink: 0; 
+            z-index: 50;
+            transition: var(--transition);
+        }
         
-        .menu-label { text-transform: uppercase; font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin-bottom: 12px; letter-spacing: 0.05em; }
-        .menu-item { padding: 12px 16px; margin-bottom: 6px; border-radius: 8px; color: var(--text-muted); cursor: pointer; transition: all 0.2s; display: flex; align-items: center; gap: 12px; font-weight: 500; }
+        .brand { font-size: 1.5rem; font-weight: 800; margin-bottom: 40px; color: var(--text-heading); letter-spacing: -0.5px; display: flex; align-items: center; gap: 10px; }
+        .brand-icon { width: 32px; height: 32px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; }
+
+        .menu-label { text-transform: uppercase; font-size: 0.7rem; color: var(--text-muted); font-weight: 700; margin-bottom: 12px; letter-spacing: 0.05em; }
+        
+        .menu-item { 
+            padding: 12px 16px; 
+            margin-bottom: 4px; 
+            border-radius: 8px; 
+            color: var(--text-muted); 
+            cursor: pointer; 
+            transition: var(--transition); 
+            display: flex; 
+            align-items: center; 
+            gap: 12px; 
+            font-weight: 500;
+            user-select: none;
+        }
         .menu-item:hover { background: var(--bg-hover); color: var(--text-heading); }
-        .menu-item.active { background: var(--accent-light); color: var(--accent); font-weight: 600; }
-        .menu-item svg { width: 20px; height: 20px; opacity: 0.8; }
+        .menu-item.active { background: var(--accent-light); color: var(--accent-dark); font-weight: 600; }
+        .menu-item:focus-visible { box-shadow: 0 0 0 2px var(--accent); }
 
         /* Main Content */
-        main { flex: 1; overflow-y: auto; padding: 32px; position: relative; }
-        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; }
-        h1 { margin: 0; font-size: 1.8rem; font-weight: 700; color: var(--text-heading); }
-        .date-badge { background: var(--bg-card); padding: 8px 16px; border-radius: 20px; font-size: 0.9rem; color: var(--text-muted); border: 1px solid var(--border-color); font-weight: 500; box-shadow: var(--shadow-sm); }
+        main { flex: 1; overflow-y: auto; padding: 32px; position: relative; scroll-behavior: smooth; }
+        
+        header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 32px; flex-wrap: wrap; gap: 16px; }
+        h1 { margin: 0; font-size: 1.8rem; font-weight: 700; color: var(--text-heading); letter-spacing: -0.025em; }
+        
+        .date-badge { 
+            background: var(--bg-card); 
+            padding: 8px 16px; 
+            border-radius: 99px; 
+            font-size: 0.85rem; 
+            color: var(--text-heading); 
+            border: 1px solid var(--border-color); 
+            font-weight: 500; 
+            box-shadow: var(--shadow-sm); 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
         /* Dashboard Grid */
-        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: var(--grid-gap); margin-bottom: var(--grid-gap); }
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--grid-gap); margin-bottom: var(--grid-gap); }
         .charts-grid { display: grid; grid-template-columns: 2fr 1fr; gap: var(--grid-gap); margin-bottom: var(--grid-gap); }
         .tables-grid { display: grid; grid-template-columns: 1fr 1fr; gap: var(--grid-gap); }
 
         /* Cards */
-        .card { background: var(--bg-card); border-radius: 12px; padding: 24px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); }
-        .card h3 { margin: 0 0 20px 0; font-size: 1rem; color: var(--text-heading); font-weight: 600; display: flex; justify-content: space-between; align-items: center; }
+        .card { background: var(--bg-card); border-radius: 16px; padding: 24px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); transition: var(--transition); display: flex; flex-direction: column; }
+        .card h3 { margin: 0 0 20px 0; font-size: 0.95rem; color: var(--text-muted); font-weight: 600; display: flex; justify-content: space-between; align-items: center; text-transform: uppercase; letter-spacing: 0.025em; }
         
-        .card-interactive { cursor: pointer; transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s; position: relative; overflow: hidden; }
-        .card-interactive:hover { transform: translateY(-3px); border-color: var(--accent); box-shadow: var(--shadow-md); }
-        .card-interactive::after { content: 'Kliknij, aby zobaczyć szczegóły'; position: absolute; bottom: 12px; right: 12px; font-size: 0.7rem; color: var(--accent); opacity: 0; transition: opacity 0.2s; font-weight: 600; }
-        .card-interactive:hover::after { opacity: 1; }
+        .card-interactive { cursor: pointer; position: relative; overflow: hidden; }
+        .card-interactive:hover { transform: translateY(-2px); border-color: var(--accent); box-shadow: var(--shadow-md); }
+        .card-interactive:active { transform: translateY(0); }
 
-        .kpi-value { font-size: 2.5rem; font-weight: 800; color: var(--text-heading); margin-bottom: 4px; letter-spacing: -1px; }
-        .kpi-sub { font-size: 0.85rem; color: var(--text-muted); }
+        .kpi-value { font-size: 2.2rem; font-weight: 800; color: var(--text-heading); margin-bottom: 4px; letter-spacing: -1px; line-height: 1.1; }
+        .kpi-sub { font-size: 0.85rem; color: var(--text-muted); display: flex; align-items: center; gap: 6px; }
 
         /* Tables */
-        .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border-color); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
-        th { text-align: left; color: var(--text-muted); padding: 16px; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-color); background: var(--bg-hover); font-weight: 600; }
-        td { padding: 16px; border-bottom: 1px solid var(--border-color); color: var(--text-main); vertical-align: middle; }
-        tr:hover td { background: var(--bg-hover); }
+        .table-container { overflow-x: auto; border-radius: 8px; border: 1px solid var(--border-color); width: 100%; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.875rem; white-space: nowrap; }
+        th { text-align: left; color: var(--text-muted); padding: 12px 16px; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 1px solid var(--border-color); background: var(--bg-hover); font-weight: 600; position: sticky; top: 0; z-index: 10; }
+        td { padding: 12px 16px; border-bottom: 1px solid var(--border-color); color: var(--text-main); vertical-align: middle; }
         tr:last-child td { border-bottom: none; }
         
-        .clickable-row { cursor: pointer; transition: background 0.2s; }
-        .clickable-row:hover td { background: #f1f5f9; border-left: 3px solid var(--accent); padding-left: 13px; }
-        
-        .progress-bar { height: 6px; background: var(--border-color); border-radius: 3px; overflow: hidden; margin-top: 8px; }
-        .progress-fill { height: 100%; border-radius: 3px; }
+        /* Sortable Headers */
+        th.sortable { cursor: pointer; user-select: none; transition: background 0.1s; }
+        th.sortable:hover { background: #e2e8f0; color: var(--text-heading); }
+        th.sortable span { margin-left: 4px; opacity: 0.5; }
+        th.sortable.active span { opacity: 1; color: var(--accent); }
+
+        .clickable-row { cursor: pointer; transition: background 0.1s; }
+        .clickable-row:hover td { background: var(--bg-hover); }
 
         /* Utilities */
-        .btn-sm { padding: 8px 16px; font-size: 0.85rem; border-radius: 6px; border: 1px solid var(--border-color); background: white; color: var(--text-main); cursor: pointer; transition: 0.2s; font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
-        .btn-sm:hover { background: var(--bg-hover); border-color: var(--accent); color: var(--accent); }
+        .btn-sm { padding: 8px 16px; font-size: 0.85rem; border-radius: 8px; border: 1px solid var(--border-color); background: white; color: var(--text-main); cursor: pointer; transition: var(--transition); font-weight: 600; display: inline-flex; align-items: center; gap: 8px; }
+        .btn-sm:hover { background: var(--bg-hover); border-color: var(--border-color); color: var(--text-heading); }
+        .btn-sm:active { background: #e2e8f0; }
         .btn-primary { background: var(--accent); color: white; border-color: var(--accent); }
-        .btn-primary:hover { background: #1d4ed8; color: white; }
+        .btn-primary:hover { background: var(--accent-dark); color: white; border-color: var(--accent-dark); }
 
-        .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75rem; font-weight: 600; display: inline-block; white-space: nowrap; }
+        .badge { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: 600; display: inline-block; }
         .bg-danger { background: #fef2f2; color: var(--danger); border: 1px solid #fee2e2; }
         .bg-warning { background: #fffbeb; color: #b45309; border: 1px solid #fef3c7; }
         .bg-success { background: #ecfdf5; color: #047857; border: 1px solid #d1fae5; }
@@ -100,118 +149,120 @@
         .bg-neutral { background: #f1f5f9; color: var(--text-muted); border: 1px solid #e2e8f0; }
 
         .hidden { display: none !important; }
-        
-        #loader { position: fixed; inset: 0; background: var(--bg-body); z-index: 999; display: flex; justify-content: center; align-items: center; }
-        .spinner { width: 40px; height: 40px; border: 4px solid var(--border-color); border-top-color: var(--accent); border-radius: 50%; animation: spin 1s infinite linear; }
+        .empty-state { padding: 40px; text-align: center; color: var(--text-muted); font-size: 0.9rem; }
+
+        /* Loader */
+        #loader { position: fixed; inset: 0; background: var(--bg-body); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 16px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--border-color); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s infinite linear; }
         @keyframes spin { to { transform: rotate(360deg); } }
 
-        /* Controls Row */
+        /* Controls */
         .controls-row { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
-        .search-input { background: white; border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px; color: var(--text-heading); width: 100%; min-width: 250px; flex: 1; outline: none; font-family: inherit; font-size: 0.9rem; transition: border-color 0.2s; box-shadow: var(--shadow-sm); }
-        .search-input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px var(--accent-light); }
-        
-        .select-filter { background: white; border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px; color: var(--text-heading); outline: none; font-family: inherit; font-size: 0.9rem; min-width: 200px; cursor: pointer; box-shadow: var(--shadow-sm); }
-        .select-filter:focus { border-color: var(--accent); }
+        .search-input, .select-filter { background: white; border: 1px solid var(--border-color); padding: 10px 16px; border-radius: 8px; color: var(--text-heading); font-size: 0.9rem; outline: none; transition: var(--transition); box-shadow: var(--shadow-sm); }
+        .search-input { flex: 1; min-width: 200px; }
+        .search-input:focus, .select-filter:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-light); }
 
-        /* ABC Classes */
-        .abc-tag { width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 800; font-size: 0.7rem; border: 1px solid transparent; }
-        .abc-a { background: #ecfdf5; color: #047857; border-color: #d1fae5; }
-        .abc-b { background: #fffbeb; color: #b45309; border-color: #fef3c7; }
-        .abc-c { background: #f1f5f9; color: var(--text-muted); border-color: #e2e8f0; }
+        /* ABC Tag */
+        .abc-tag { width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 800; font-size: 0.75rem; border: 1px solid transparent; }
+        .abc-a { background: #dcfce7; color: #15803d; border-color: #bbf7d0; }
+        .abc-b { background: #fef9c3; color: #a16207; border-color: #fde047; }
+        .abc-c { background: #f1f5f9; color: #64748b; border-color: #e2e8f0; }
 
-        /* MODAL PRODUCT DETAILS */
-        .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.6); z-index: 1000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(2px); opacity: 0; pointer-events: none; transition: opacity 0.2s; }
-        
-        /* FIX: Ensure Product Details is always on TOP of other modals */
-        #modal-product-details { z-index: 2000; }
-
+        /* Modals */
+        .modal-backdrop { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); z-index: 1000; display: flex; justify-content: center; align-items: center; backdrop-filter: blur(4px); opacity: 0; pointer-events: none; transition: opacity 0.2s ease-in-out; }
         .modal-backdrop.active { opacity: 1; pointer-events: all; }
-        .modal-content { background: var(--bg-card); width: 90%; max-width: 900px; max-height: 90vh; border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1); }
-        .modal-header { padding: 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: flex-start; background: var(--bg-hover); }
+        /* Stacking fix */
+        #modal-product-details { z-index: 1050; } 
+        
+        .modal-content { background: var(--bg-card); width: 95%; max-width: 900px; max-height: 90vh; border-radius: 16px; border: 1px solid var(--border-color); display: flex; flex-direction: column; overflow: hidden; box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25); transform: scale(0.95); transition: transform 0.2s; }
+        .modal-backdrop.active .modal-content { transform: scale(1); }
+        
+        .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: flex-start; background: #f8fafc; }
         .modal-body { padding: 24px; overflow-y: auto; }
-        .modal-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        .detail-block { background: white; border-radius: 8px; padding: 20px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); }
-        .detail-label { font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); letter-spacing: 0.05em; margin-bottom: 6px; font-weight: 600; }
-        .detail-val { font-size: 1.2rem; font-weight: 700; color: var(--text-heading); margin-bottom: 16px; }
-        .detail-val:last-child { margin-bottom: 0; }
-        .close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: 0.2s; padding: 0; line-height: 1; }
-        .close-btn:hover { color: var(--danger); transform: rotate(90deg); }
+        .close-btn { background: transparent; border: none; color: var(--text-muted); font-size: 1.5rem; cursor: pointer; transition: 0.2s; line-height: 1; padding: 4px; border-radius: 4px; }
+        .close-btn:hover { color: var(--danger); background: #fee2e2; }
 
-        @media (max-width: 1200px) {
+        /* Mobile Header */
+        .mobile-header { display: none; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .hamburger { background: none; border: none; cursor: pointer; color: var(--text-main); padding: 8px; }
+
+        @media (max-width: 1024px) {
             .charts-grid, .tables-grid { grid-template-columns: 1fr; }
             .modal-cols { grid-template-columns: 1fr; }
-            aside { width: 80px; padding: 12px; }
-            .menu-item span, .brand span, .menu-label { display: none; }
-            .menu-item { justify-content: center; }
-            .brand { font-size: 1rem; text-align: center; margin-bottom: 24px; }
-            .controls-row { flex-direction: column; }
-            .select-filter { width: 100%; }
+            
+            /* Mobile Sidebar */
+            aside { position: fixed; left: -280px; top: 0; bottom: 0; box-shadow: 20px 0 50px rgba(0,0,0,0.1); transition: left 0.3s ease; }
+            aside.open { left: 0; }
+            .mobile-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 40; opacity: 0; pointer-events: none; transition: opacity 0.3s; }
+            .mobile-overlay.active { opacity: 1; pointer-events: all; }
+            
+            .mobile-header { display: flex; }
+            main { padding: 20px; }
         }
     </style>
 </head>
 <body>
 
-    <div id="loader"><div class="spinner"></div></div>
+    <div id="loader">
+        <div class="spinner"></div>
+        <div style="font-size:0.9rem; color:var(--text-muted);">Ładowanie systemu...</div>
+    </div>
+
+    <!-- Mobile Overlay -->
+    <div class="mobile-overlay" onclick="App.toggleSidebar()"></div>
 
     <!-- PRODUCT DETAILS MODAL -->
     <div id="modal-product-details" class="modal-backdrop">
         <div class="modal-content">
             <div class="modal-header">
                 <div>
-                    <div style="display:flex; gap:12px; align-items:center; margin-bottom:8px;">
+                    <div style="display:flex; gap:8px; align-items:center; margin-bottom:8px;">
                         <span class="badge" id="detail-cat-badge">Kategoria</span>
-                        <span class="abc-tag" id="detail-abc" style="width:20px; height:20px; font-size:0.7rem;">A</span>
+                        <div class="abc-tag" id="detail-abc">A</div>
                     </div>
-                    <h2 style="margin:0; font-size:1.5rem; color:var(--text-heading);" id="detail-name">Nazwa Produktu</h2>
-                    <div style="color:var(--text-muted); font-family:monospace; margin-top:4px;" id="detail-ean">EAN: 123456789</div>
+                    <h2 style="margin:0; font-size:1.4rem; color:var(--text-heading);" id="detail-name">Nazwa Produktu</h2>
+                    <div style="color:var(--text-muted); font-family:monospace; font-size:0.9rem; margin-top:4px;" id="detail-ean"></div>
                 </div>
                 <button class="close-btn" onclick="Analytics.closeDetails('modal-product-details')">&times;</button>
             </div>
             <div class="modal-body">
                 <!-- Stats Row -->
-                <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:12px; margin-bottom:24px;">
-                    <div class="detail-block" style="padding:16px;">
-                        <div class="detail-label">Stan Całkowity</div>
-                        <div class="detail-val" style="color:var(--accent); font-size:1.4rem;" id="detail-total">0</div>
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:12px; margin-bottom:24px;">
+                    <div style="padding:16px; background:var(--bg-hover); border-radius:8px;">
+                        <div class="menu-label">Stan Całkowity</div>
+                        <div style="font-size:1.4rem; font-weight:700; color:var(--accent);" id="detail-total">0</div>
                     </div>
-                    <div class="detail-block" style="padding:16px;">
-                        <div class="detail-label">Minimum</div>
-                        <div class="detail-val" id="detail-min">0</div>
+                    <div style="padding:16px; background:var(--bg-hover); border-radius:8px;">
+                        <div class="menu-label">Minimum (ROP)</div>
+                        <div style="font-size:1.4rem; font-weight:700;" id="detail-min">0</div>
                     </div>
-                    <div class="detail-block" style="padding:16px;">
-                        <div class="detail-label">Lokalizacja</div>
-                        <div class="detail-val" id="detail-loc">-</div>
+                    <div style="padding:16px; background:var(--bg-hover); border-radius:8px;">
+                        <div class="menu-label">Lokalizacja</div>
+                        <div style="font-size:1.2rem; font-weight:600;" id="detail-loc">-</div>
                     </div>
-                    <div class="detail-block" style="padding:16px;">
-                        <div class="detail-label">Szac. Zapas (Dni)</div>
-                        <div class="detail-val" id="detail-coverage">0 dni</div>
+                    <div style="padding:16px; background:var(--bg-hover); border-radius:8px;">
+                        <div class="menu-label">Szac. Zapas</div>
+                        <div style="font-size:1.2rem; font-weight:600;" id="detail-coverage">0 dni</div>
                     </div>
                 </div>
 
-                <div class="modal-cols">
-                    <!-- Left: Batches -->
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap:24px;">
+                    <!-- Batches -->
                     <div>
-                        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" /></svg>
-                            Aktywne Partie (LOT)
-                        </h3>
-                        <div class="table-container" style="max-height:300px; overflow-y:auto; border:none;">
+                        <h3 style="color:var(--text-heading); margin-bottom:12px; font-size:1rem;">Aktywne Partie (LOT)</h3>
+                        <div class="table-container" style="max-height:250px; overflow-y:auto; border:1px solid var(--border-color);">
                             <table id="detail-table-lots">
-                                <thead><tr><th>Nr Partii</th><th>Data Ważn.</th><th>Ilość</th></tr></thead>
+                                <thead><tr><th>Nr Partii</th><th>Data Ważn.</th><th style="text-align:right">Ilość</th></tr></thead>
                                 <tbody></tbody>
                             </table>
                         </div>
                     </div>
-
-                    <!-- Right: Product History -->
+                    <!-- History -->
                     <div>
-                        <h3 style="margin-top:0; display:flex; align-items:center; gap:8px;">
-                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                            Ostatnie Operacje
-                        </h3>
-                        <div class="table-container" style="max-height:300px; overflow-y:auto; border:none;">
+                        <h3 style="color:var(--text-heading); margin-bottom:12px; font-size:1rem;">Ostatnie Operacje</h3>
+                        <div class="table-container" style="max-height:250px; overflow-y:auto; border:1px solid var(--border-color);">
                             <table id="detail-table-history">
-                                <thead><tr><th>Data</th><th>Typ</th><th>Zmiana</th></tr></thead>
+                                <thead><tr><th>Data</th><th>Typ</th><th style="text-align:right">Zmiana</th></tr></thead>
                                 <tbody></tbody>
                             </table>
                         </div>
@@ -226,40 +277,40 @@
         <div class="modal-content" style="max-width: 600px;">
             <div class="modal-header">
                 <div>
-                    <div style="font-size:0.8rem; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;" id="doc-type-label">TYP DOKUMENTU</div>
-                    <h2 style="margin:0; font-size:1.4rem;" id="doc-ref-title">Dokument #123</h2>
-                    <div style="font-size:0.9rem; margin-top:4px; color:var(--accent);" id="doc-user-date">User | Data</div>
+                    <div style="font-size:0.75rem; font-weight:700; color:var(--text-muted); margin-bottom:4px;" id="doc-type-label">TYP DOKUMENTU</div>
+                    <h2 style="margin:0; font-size:1.4rem;" id="doc-ref-title">...</h2>
+                    <div style="font-size:0.9rem; margin-top:4px; color:var(--accent);" id="doc-user-date">...</div>
                 </div>
                 <button class="close-btn" onclick="Analytics.closeDetails('modal-doc-details')">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="table-container" style="overflow-y:auto; border:none;">
+                <div class="table-container" style="max-height:400px; overflow-y:auto;">
                     <table id="doc-items-table">
-                        <thead><tr><th>Produkt</th><th>Szczegóły (LOT)</th><th style="text-align:right;">Ilość</th></tr></thead>
+                        <thead><tr><th>Produkt</th><th>Szczegóły</th><th style="text-align:right;">Ilość</th></tr></thead>
                         <tbody></tbody>
                     </table>
                 </div>
-                <div style="margin-top:20px; text-align:right; font-size:1.1rem; color:var(--text-muted);">
-                    Łącznie pozycji: <strong style="color:var(--text-heading);" id="doc-total-items">0</strong>
+                <div style="margin-top:20px; text-align:right; font-size:1rem; color:var(--text-muted); border-top:1px solid var(--border-color); padding-top:16px;">
+                    Łącznie pozycji: <strong style="color:var(--text-heading); font-size:1.2rem;" id="doc-total-items">0</strong>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- LOW STOCK REPORT MODAL -->
-    <div id="modal-low-stock" class="modal-backdrop">
+    <!-- GENERIC REPORT MODAL -->
+    <div id="modal-report" class="modal-backdrop">
         <div class="modal-content" style="max-width: 800px;">
             <div class="modal-header">
                 <div>
-                    <div style="font-size:0.8rem; text-transform:uppercase; color:var(--danger); font-weight:700; margin-bottom:4px;">RAPORT ALARMOWY</div>
-                    <h2 style="margin:0; font-size:1.4rem;">Produkty Poniżej Minimum</h2>
+                    <div class="menu-label" id="report-subtitle" style="color:var(--accent);">RAPORT</div>
+                    <h2 style="margin:0; font-size:1.4rem;" id="report-title">Tytuł Raportu</h2>
                 </div>
-                <button class="close-btn" onclick="Analytics.closeDetails('modal-low-stock')">&times;</button>
+                <button class="close-btn" onclick="Analytics.closeDetails('modal-report')">&times;</button>
             </div>
             <div class="modal-body">
-                <div class="table-container" style="overflow-y:auto; border:none;">
-                    <table id="table-low-stock-report">
-                        <thead><tr><th>Produkt</th><th>Kategoria</th><th>Min</th><th>Stan</th><th>Brakuje</th></tr></thead>
+                <div class="table-container" style="max-height:500px; overflow-y:auto;">
+                    <table id="table-report">
+                        <thead></thead>
                         <tbody></tbody>
                     </table>
                 </div>
@@ -267,51 +318,45 @@
         </div>
     </div>
 
-    <!-- EXPIRING BATCHES MODAL -->
-    <div id="modal-expiring" class="modal-backdrop">
-        <div class="modal-content" style="max-width: 800px;">
-            <div class="modal-header">
-                <div>
-                    <div style="font-size:0.8rem; text-transform:uppercase; color:var(--warning); font-weight:700; margin-bottom:4px;">RAPORT WAŻNOŚCI</div>
-                    <h2 style="margin:0; font-size:1.4rem;">Partie Wygasające (< 60 dni)</h2>
-                </div>
-                <button class="close-btn" onclick="Analytics.closeDetails('modal-expiring')">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="table-container" style="overflow-y:auto; border:none;">
-                    <table id="table-expiring-report">
-                        <thead><tr><th>Produkt</th><th>Partia (LOT)</th><th>Data Ważności</th><th>Pozostało Dni</th><th>Ilość</th></tr></thead>
-                        <tbody></tbody>
-                    </table>
-                </div>
-            </div>
+    <aside id="sidebar">
+        <div class="brand">
+            <div class="brand-icon">A</div>
+            ALCHI v3.1
         </div>
-    </div>
-
-    <aside>
-        <div class="brand">ALCHI Analityka</div>
         
         <div class="menu-label">Nawigacja</div>
-        <div class="menu-item active" onclick="App.router('dashboard', this)">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-            <span>Główny Pulpit</span>
+        <div class="menu-item active" onclick="App.router('dashboard', this)" tabindex="0">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            <span>Pulpit</span>
         </div>
-        <div class="menu-item" onclick="App.router('warehouse', this)">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
-            <span>Analiza Stanów</span>
+        <div class="menu-item" onclick="App.router('warehouse', this)" tabindex="0">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+            <span>Stany Magazynowe</span>
         </div>
-        <div class="menu-item" onclick="App.router('history', this)">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            <span>Pełna Historia</span>
+        <div class="menu-item" onclick="App.router('history', this)" tabindex="0">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+            <span>Dziennik Operacji</span>
         </div>
     </aside>
 
     <main>
+        <div class="mobile-header">
+            <button class="hamburger" onclick="App.toggleSidebar()">
+                <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path></svg>
+            </button>
+            <div style="font-weight:700;">ALCHI Analityka</div>
+            <div style="width:24px;"></div>
+        </div>
+
         <header>
             <div>
-                <h1 id="view-title">Raport Magazynowy</h1>
+                <h1 id="view-title">Pulpit Zarządczy</h1>
+                <div style="color:var(--text-muted); font-size:0.9rem; margin-top:4px;">Podsumowanie aktywności magazynu</div>
             </div>
-            <div class="date-badge" id="current-date">--.--.----</div>
+            <div class="date-badge">
+                <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                <span id="current-date">--.--.----</span>
+            </div>
         </header>
 
         <!-- VIEW: DASHBOARD -->
@@ -319,40 +364,45 @@
             <!-- KPI ROW -->
             <div class="kpi-grid">
                 <div class="card">
-                    <h3>Łącznie Produktów <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg></h3>
+                    <h3>Indeksy SKU</h3>
                     <div class="kpi-value" id="kpi-products">0</div>
-                    <div class="kpi-sub">Unikalne indeksy SKU</div>
+                    <div class="kpi-sub">Aktywny asortyment</div>
                 </div>
                 <div class="card">
-                    <h3>Całkowity Stan <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" /></svg></h3>
+                    <h3>Całkowity Stan</h3>
                     <div class="kpi-value" style="color:var(--accent)" id="kpi-stock">0</div>
-                    <div class="kpi-sub">Suma jednostek w magazynie</div>
+                    <div class="kpi-sub">Suma jednostek</div>
                 </div>
-                <!-- CLICKABLE LOW STOCK -->
-                <div class="card card-interactive" onclick="Analytics.showLowStockReport()">
-                    <h3>Niski Stan (Alarm) <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg></h3>
+                <div class="card card-interactive" onclick="Analytics.showLowStockReport()" role="button" tabindex="0">
+                    <h3>Niski Stan</h3>
                     <div class="kpi-value" style="color:var(--danger)" id="kpi-low">0</div>
-                    <div class="kpi-sub">Produkty poniżej minimum</div>
+                    <div class="kpi-sub">
+                        <span style="width:8px; height:8px; background:var(--danger); border-radius:50%; display:inline-block;"></span>
+                        Poniżej minimum
+                    </div>
                 </div>
-                <!-- CLICKABLE EXPIRING -->
-                <div class="card card-interactive" onclick="Analytics.showExpiringReport()">
-                    <h3>Wygasające Partie <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg></h3>
+                <div class="card card-interactive" onclick="Analytics.showExpiringReport()" role="button" tabindex="0">
+                    <h3>Wygasające</h3>
                     <div class="kpi-value" style="color:var(--warning)" id="kpi-exp">0</div>
-                    <div class="kpi-sub">Termin ważności < 60 dni</div>
+                    <div class="kpi-sub">
+                        <span style="width:8px; height:8px; background:var(--warning); border-radius:50%; display:inline-block;"></span>
+                        &lt; 60 dni
+                    </div>
                 </div>
             </div>
 
             <!-- CHARTS ROW -->
             <div class="charts-grid">
                 <div class="card">
-                    <h3>Dynamika Magazynu (Ostatnie 14 dni)</h3>
-                    <div style="height: 300px;">
+                    <h3>Ruch Magazynowy (14 dni)</h3>
+                    <div style="height: 300px; position:relative;">
                         <canvas id="chart-movements"></canvas>
+                        <div id="chart-movements-empty" class="hidden" style="position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:var(--text-muted);">Brak danych z ostatnich 14 dni</div>
                     </div>
                 </div>
                 <div class="card">
                     <h3>Struktura Kategorii</h3>
-                    <div style="height: 300px; display:flex; justify-content:center;">
+                    <div style="height: 300px; display:flex; justify-content:center; position:relative;">
                         <canvas id="chart-categories"></canvas>
                     </div>
                 </div>
@@ -360,28 +410,25 @@
 
             <!-- TABLES ROW -->
             <div class="tables-grid">
-                <!-- EXPIRATION MONITOR -->
                 <div class="card">
                     <h3 style="color:var(--danger)">
-                        <span>⚠️ Monitoring Ważności (Najbliższe)</span>
-                        <button class="btn-sm" onclick="Analytics.showExpiringReport()">Pokaż Wszystkie</button>
+                        <span>⚠️ Monitoring Ważności</span>
                     </h3>
                     <div class="table-container" style="border:none;">
                         <table id="table-exp">
-                            <thead><tr><th>Produkt</th><th>Partia</th><th>Data Ważności</th><th>Stan</th></tr></thead>
+                            <thead><tr><th>Produkt</th><th>Data</th><th style="text-align:right">Dni</th></tr></thead>
                             <tbody><!-- Rendered JS --></tbody>
                         </table>
                     </div>
                 </div>
 
-                <!-- USER ACTIVITY -->
                 <div class="card">
                     <h3 style="color:var(--accent)">
-                        <span>🏆 Aktywność Operatorów</span>
+                        <span>🏆 Top Operatorzy</span>
                     </h3>
                     <div class="table-container" style="border:none;">
                         <table id="table-users">
-                            <thead><tr><th>Użytkownik</th><th>Liczba Operacji</th><th>Udział</th></tr></thead>
+                            <thead><tr><th>User</th><th style="text-align:right">Ops</th><th>%</th></tr></thead>
                             <tbody><!-- Rendered JS --></tbody>
                         </table>
                     </div>
@@ -389,36 +436,29 @@
             </div>
         </div>
 
-        <!-- VIEW: WAREHOUSE OVERVIEW -->
+        <!-- VIEW: WAREHOUSE -->
         <div id="view-warehouse" class="hidden">
-            <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h3 style="margin:0">Analiza Asortymentu</h3>
-                </div>
-                
-                <!-- NEW: Filter & Search Row -->
+            <div class="card" style="height:100%;">
                 <div class="controls-row">
-                    <input type="text" id="search-warehouse" class="search-input" placeholder="Szukaj nazwy, EAN..." onkeyup="App.handleSearch(Analytics.renderWarehouse)">
+                    <input type="text" id="search-warehouse" class="search-input" placeholder="Szukaj: Nazwa, EAN..." onkeyup="App.handleSearch(Analytics.renderWarehouse)">
                     <select id="filter-category" class="select-filter" onchange="Analytics.renderWarehouse()">
                         <option value="all">Wszystkie Kategorie</option>
-                        <!-- Populated by JS -->
                     </select>
                     <button class="btn-sm btn-primary" onclick="Analytics.exportToCSV()">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-                        Eksportuj CSV
+                        <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                        CSV
                     </button>
                 </div>
 
-                <div class="table-container">
+                <div class="table-container" style="flex:1;">
                     <table id="table-warehouse">
                         <thead>
                             <tr>
-                                <th>Produkt</th>
-                                <th>EAN</th>
-                                <th>Kategoria</th>
-                                <th>Stan Obecny</th>
-                                <th>Zużycie (30 dni)</th>
-                                <th>Pokrycie (Dni)</th>
+                                <th class="sortable" onclick="Analytics.setSort('name')">Produkt</th>
+                                <th class="sortable" onclick="Analytics.setSort('cat')">Kat.</th>
+                                <th class="sortable" onclick="Analytics.setSort('total')">Stan</th>
+                                <th class="sortable" onclick="Analytics.setSort('_usage30')">Zużycie (30d)</th>
+                                <th class="sortable" onclick="Analytics.setSort('_coverage')">Pokrycie</th>
                                 <th>Status</th>
                             </tr>
                         </thead>
@@ -430,20 +470,19 @@
 
         <!-- VIEW: HISTORY -->
         <div id="view-history" class="hidden">
-             <div class="card">
-                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:20px;">
-                    <h3 style="margin:0">Dziennik Operacji Magazynowych</h3>
-                    <input type="text" id="search-history" class="search-input" placeholder="Szukaj dokumentu, użytkownika..." onkeyup="App.handleSearch(Analytics.renderHistory)">
+             <div class="card" style="height:100%;">
+                <div class="controls-row">
+                    <input type="text" id="search-history" class="search-input" placeholder="Szukaj w historii (Dokument, User)..." onkeyup="App.handleSearch(Analytics.renderHistory)">
                 </div>
-                <div class="table-container">
+                <div class="table-container" style="flex:1;">
                     <table id="table-full-history">
                         <thead>
                             <tr>
                                 <th>Data</th>
-                                <th>Typ Operacji</th>
+                                <th>Typ</th>
                                 <th>Dokument</th>
                                 <th>Użytkownik</th>
-                                <th>Szczegóły</th>
+                                <th>Akcja</th>
                             </tr>
                         </thead>
                         <tbody></tbody>
@@ -451,37 +490,75 @@
                 </div>
             </div>
         </div>
-
     </main>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, getDocs, onSnapshot, query, orderBy, limit, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, onSnapshot, query, orderBy, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
+        // CONFIG (Replace with your actual config)
         const firebaseConfig = { apiKey: "AIzaSyAIWvoGZmqUbW-ZuBxHnLi4AVKkWOUb724", authDomain: "alchi-d1c38.firebaseapp.com", projectId: "alchi-d1c38", storageBucket: "alchi-d1c38.firebasestorage.app", messagingSenderId: "1049557849901", appId: "1:1049557849901:web:34258fac5872692acb65a4" };
+        
+        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
         const auth = getAuth(app);
 
-        // Global state store
-        const state = { products: [], history: [], charts: {}, categories: [] };
+        // STATE
+        const state = { 
+            products: [], 
+            history: [], 
+            charts: {}, 
+            categories: [], 
+            usageMap: new Map(),
+            sort: { col: 'name', dir: 'asc' } // Sorting state
+        };
         let searchTimeout = null;
+        let isMobileOpen = false;
 
         const App = {
             init: async () => {
-                await signInAnonymously(auth);
-                document.getElementById('current-date').innerText = new Date().toLocaleDateString('pl-PL', {weekday:'long', year:'numeric', month:'long', day:'numeric'});
-                App.startRealtimeListeners();
+                try {
+                    await signInAnonymously(auth);
+                    document.getElementById('current-date').innerText = new Date().toLocaleDateString('pl-PL', {day:'numeric', month:'long', year:'numeric'});
+                    App.setupListeners();
+                    App.startRealtimeListeners();
+                } catch (err) {
+                    console.error("Auth Error:", err);
+                    document.querySelector('#loader').innerHTML = '<div style="color:red">Błąd połączenia z bazą danych.</div>';
+                }
             },
             
+            setupListeners: () => {
+                // Close modals on ESC
+                document.addEventListener('keydown', (e) => {
+                    if(e.key === "Escape") {
+                        document.querySelectorAll('.modal-backdrop.active').forEach(m => m.classList.remove('active'));
+                    }
+                });
+            },
+
+            toggleSidebar: () => {
+                isMobileOpen = !isMobileOpen;
+                const sb = document.getElementById('sidebar');
+                const overlay = document.querySelector('.mobile-overlay');
+                if(isMobileOpen) {
+                    sb.classList.add('open');
+                    overlay.classList.add('active');
+                } else {
+                    sb.classList.remove('open');
+                    overlay.classList.remove('active');
+                }
+            },
+
             handleSearch: (fn) => {
                 clearTimeout(searchTimeout);
-                searchTimeout = setTimeout(fn, 300);
+                searchTimeout = setTimeout(fn, 250); // Debounce
             },
 
             startRealtimeListeners: () => {
-                // 1. Products Listener
+                // Products
                 onSnapshot(collection(db, "products"), (snapshot) => {
                     state.products = snapshot.docs.map(d => {
                         const dat = d.data();
@@ -492,515 +569,519 @@
                         return { id: d.id, ...dat, total, hasBatches };
                     });
 
-                    // Extract unique categories
-                    const uniqueCats = [...new Set(state.products.map(p => p.cat).filter(Boolean))].sort();
-                    state.categories = uniqueCats;
-                    
-                    // Update dropdown
-                    const select = document.getElementById('filter-category');
-                    if(select) {
-                        const currentVal = select.value;
-                        select.innerHTML = `<option value="all">Wszystkie Kategorie (${state.products.length})</option>` + 
-                            uniqueCats.map(c => `<option value="${c}">${c}</option>`).join('');
-                        select.value = currentVal; // preserve selection if possible
-                    }
-
+                    state.categories = [...new Set(state.products.map(p => p.cat).filter(Boolean))].sort();
+                    App.updateCategoryDropdown();
                     App.updateUI();
-                });
+                }, (error) => console.error("Products Stream Error:", error));
 
-                // 2. History Listener
-                const q = query(collection(db, "history"), orderBy("date", "desc"), limit(2000));
+                // History (Optimized: Only last 1000 for stats, ideally should be paginated)
+                const q = query(collection(db, "history"), orderBy("date", "desc"), limit(1000));
                 onSnapshot(q, (snapshot) => {
                     state.history = snapshot.docs.map(d => {
                         const data = d.data();
                         let dateObj = new Date();
-                        if (data.date && typeof data.date.toDate === 'function') {
-                            try { dateObj = data.date.toDate(); } catch(e) {}
-                        }
+                        if (data.date && typeof data.date.toDate === 'function') dateObj = data.date.toDate();
                         return { id: d.id, ...data, dateObj };
                     });
                     App.updateUI();
-                });
+                }, (error) => console.error("History Stream Error:", error));
+            },
+
+            updateCategoryDropdown: () => {
+                const select = document.getElementById('filter-category');
+                if(!select) return;
+                const currentVal = select.value;
+                select.innerHTML = `<option value="all">Wszystkie (${state.products.length})</option>` + 
+                    state.categories.map(c => `<option value="${c}">${c}</option>`).join('');
+                select.value = currentVal;
             },
 
             updateUI: () => {
-                Analytics.calculateABC();
+                Analytics.calculateStats();
                 Analytics.renderKPI();
                 Analytics.renderCharts();
-                Analytics.renderTables();
-                Analytics.renderWarehouse(); 
-                Analytics.renderHistory();   
-                document.getElementById('loader').style.display = 'none';
+                Analytics.renderDashboardTables();
+                
+                // Render active view only
+                const activeView = document.querySelector('div[id^="view-"]:not(.hidden)');
+                if(activeView) {
+                    if(activeView.id === 'view-warehouse') Analytics.renderWarehouse();
+                    if(activeView.id === 'view-history') Analytics.renderHistory();
+                }
+
+                document.getElementById('loader').classList.add('hidden');
             },
 
             router: (view, el) => {
                 document.querySelectorAll('.menu-item').forEach(i => i.classList.remove('active'));
-                el.classList.add('active');
+                if(el) el.classList.add('active');
+                
                 ['view-dashboard', 'view-warehouse', 'view-history'].forEach(id => {
                     document.getElementById(id).classList.add('hidden');
                 });
-                document.getElementById('view-' + view).classList.remove('hidden');
-                const titles = {
-                    'dashboard': 'Raport Magazynowy',
-                    'warehouse': 'Analiza Stanów',
-                    'history': 'Dziennik Operacji'
-                };
+                
+                const target = document.getElementById('view-' + view);
+                target.classList.remove('hidden');
+                
+                // Force render on view switch
+                if(view === 'warehouse') Analytics.renderWarehouse();
+                if(view === 'history') Analytics.renderHistory();
+                if(view === 'dashboard') {
+                    Analytics.renderCharts(); // Resize charts fix
+                    Analytics.renderDashboardTables();
+                }
+
+                const titles = { 'dashboard': 'Pulpit Zarządczy', 'warehouse': 'Stany Magazynowe', 'history': 'Dziennik Operacji' };
                 document.getElementById('view-title').innerText = titles[view];
+                
+                // Auto close mobile sidebar
+                if(isMobileOpen) App.toggleSidebar();
             }
         };
 
         const Analytics = {
             escapeHTML: (str) => {
-                if(!str) return '';
-                return String(str).replace(/[&<>'"]/g, 
-                    tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
+                if(!str && str !== 0) return '';
+                return String(str).replace(/[&<>'"]/g, tag => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[tag]));
             },
 
-            getCategoryColor: (str) => {
-                if(!str) return { bg: '#f1f5f9', border: '#e2e8f0', text: '#64748b' };
-                // Simple hash to color (Pastel palette)
-                const colors = [
-                    { bg: '#eff6ff', border: '#dbeafe', text: '#2563eb' }, // Blue
-                    { bg: '#ecfdf5', border: '#d1fae5', text: '#059669' }, // Green
-                    { bg: '#fef3c7', border: '#fde68a', text: '#d97706' }, // Amber
-                    { bg: '#f3e8ff', border: '#e9d5ff', text: '#7c3aed' }, // Purple
-                    { bg: '#ffe4e6', border: '#fecdd3', text: '#e11d48' }, // Rose
-                    { bg: '#e0f2fe', border: '#bae6fd', text: '#0284c7' }, // Sky
-                ];
-                let hash = 0;
-                for (let i = 0; i < str.length; i++) hash = str.charCodeAt(i) + ((hash << 5) - hash);
-                const index = Math.abs(hash) % colors.length;
-                return colors[index];
-            },
-
-            exportToCSV: () => {
-                const searchEl = document.getElementById('search-warehouse');
-                const catEl = document.getElementById('filter-category');
-                const q = searchEl ? searchEl.value.toLowerCase() : '';
-                const cat = catEl ? catEl.value : 'all';
-
-                // Get currently filtered data
-                const filtered = state.products.filter(p => {
-                    if (p.archived) return false;
-                    const matchesSearch = p.name.toLowerCase().includes(q) || (p.ean||'').includes(q);
-                    const matchesCat = cat === 'all' || p.cat === cat;
-                    return matchesSearch && matchesCat;
-                });
-
-                if(filtered.length === 0) {
-                    alert("Brak danych do eksportu.");
-                    return;
-                }
-
-                // Create CSV Content
-                const headers = ["Nazwa Produktu", "EAN", "Kategoria", "Stan", "Jednostka", "Klasa ABC", "Zużycie 30dni", "Pokrycie (dni)"];
-                const rows = filtered.map(p => [
-                    `"${p.name.replace(/"/g, '""')}"`,
-                    `"${p.ean || ''}"`,
-                    `"${p.cat || ''}"`,
-                    p.total,
-                    p.unit,
-                    p._abc,
-                    p._usageQty30Days.toFixed(1),
-                    p._coverageDays === 9999 ? "∞" : p._coverageDays
-                ]);
-
-                const csvContent = "\uFEFF" + [headers.join(";"), ...rows.map(r => r.join(";"))].join("\n");
-                
-                // Download
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const url = URL.createObjectURL(blob);
-                const link = document.createElement("a");
-                link.setAttribute("href", url);
-                link.setAttribute("download", `Analiza_Stanow_${new Date().toISOString().slice(0,10)}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-            },
-
-            calculateABC: () => {
-                state.products.forEach(p => p._usageQty30Days = 0);
+            // Optimized: Calculate usage using a Map once, not inside loop
+            calculateStats: () => {
+                state.usageMap.clear();
                 const thirtyDaysAgo = new Date();
                 thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-                
+
+                // 1. Aggregate usage
                 state.history.forEach(h => {
                     if(h.type === 'wz' && h.dateObj >= thirtyDaysAgo && h.items) {
                         h.items.forEach(item => {
-                             const p = state.products.find(prod => prod.id === item.pid);
-                             if(p) p._usageQty30Days += (parseFloat(item.qty) || 0);
+                            const current = state.usageMap.get(item.pid) || 0;
+                            state.usageMap.set(item.pid, current + (parseFloat(item.qty) || 0));
                         });
                     }
                 });
-                const sorted = [...state.products].sort((a,b) => b._usageQty30Days - a._usageQty30Days);
-                const totalItems = sorted.length;
-                sorted.forEach((p, index) => {
+
+                // 2. Assign ABC and coverage to products
+                // Sort temp array to determine ABC percentiles
+                const pWithUsage = state.products.map(p => {
+                    const usage = state.usageMap.get(p.id) || 0;
+                    return { id: p.id, usage };
+                }).sort((a,b) => b.usage - a.usage);
+
+                const totalItems = pWithUsage.length;
+                const abcMap = new Map();
+                
+                pWithUsage.forEach((item, index) => {
                     const percentile = (index + 1) / totalItems;
-                    if (percentile <= 0.2) p._abc = 'A';
-                    else if (percentile <= 0.5) p._abc = 'B';
-                    else p._abc = 'C';
+                    let cls = 'C';
+                    if (item.usage > 0) {
+                        if (percentile <= 0.2) cls = 'A';
+                        else if (percentile <= 0.5) cls = 'B';
+                    }
+                    abcMap.set(item.id, cls);
+                });
+
+                // Update Main Product Objects
+                state.products.forEach(p => {
+                    p._usage30 = state.usageMap.get(p.id) || 0;
+                    p._abc = abcMap.get(p.id) || 'C';
+                    
+                    // Coverage
+                    const daily = p._usage30 / 30;
+                    p._coverage = (daily > 0) ? Math.round(p.total / daily) : (p.total > 0 ? 999 : 0);
                 });
             },
 
             renderKPI: () => {
                 const active = state.products.filter(p => !p.archived);
                 document.getElementById('kpi-products').innerText = active.length;
-                document.getElementById('kpi-stock').innerText = active.reduce((sum, p) => sum + p.total, 0).toLocaleString();
-                document.getElementById('kpi-low').innerText = active.filter(p => p.total <= (p.min || 5)).length;
+                document.getElementById('kpi-stock').innerText = active.reduce((s, p) => s + p.total, 0).toLocaleString();
+                document.getElementById('kpi-low').innerText = active.filter(p => p.total <= (p.min || 0)).length;
 
-                const today = new Date();
-                const limitDate = new Date(); limitDate.setDate(today.getDate() + 60);
+                // Expiring logic
+                const limitDate = new Date(); limitDate.setDate(limitDate.getDate() + 60);
                 let expiringCount = 0;
-                active.filter(p => p.hasBatches && p.lots).forEach(p => {
-                    p.lots.forEach(l => {
-                        if(l.qty > 0 && l.exp) {
-                            const expDate = new Date(l.exp);
-                            if(expDate <= limitDate) expiringCount++;
-                        }
+                active.filter(p => p.hasBatches).forEach(p => {
+                    (p.lots||[]).forEach(l => {
+                        if(l.qty > 0 && l.exp && new Date(l.exp) <= limitDate) expiringCount++;
                     });
                 });
                 document.getElementById('kpi-exp').innerText = expiringCount;
             },
 
             renderCharts: () => {
-                Chart.defaults.color = '#64748b'; 
-                Chart.defaults.borderColor = '#e2e8f0';
+                Chart.defaults.font.family = "'Inter', sans-serif";
+                Chart.defaults.color = '#64748b';
 
+                // 1. Categories
                 const catMap = {};
-                state.products.filter(p => !p.archived).forEach(p => { catMap[p.cat] = (catMap[p.cat] || 0) + p.total; });
+                state.products.filter(p=>!p.archived).forEach(p => { catMap[p.cat || 'Inne'] = (catMap[p.cat || 'Inne'] || 0) + p.total; });
                 
                 if (state.charts.categories) state.charts.categories.destroy();
                 state.charts.categories = new Chart(document.getElementById('chart-categories'), {
                     type: 'doughnut',
                     data: {
                         labels: Object.keys(catMap),
-                        datasets: [{ data: Object.values(catMap), backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'], borderWidth: 0 }]
+                        datasets: [{ 
+                            data: Object.values(catMap), 
+                            backgroundColor: ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#cbd5e1'],
+                            borderWidth: 2,
+                            borderColor: '#ffffff'
+                        }]
                     },
-                    options: { responsive: true, plugins: { legend: { position: 'right', labels: { usePointStyle: true, padding: 20 } } } }
+                    options: { 
+                        responsive: true, 
+                        maintainAspectRatio: false, 
+                        plugins: { legend: { position: 'right', labels: { usePointStyle: true, boxWidth: 8 } } },
+                        cutout: '70%'
+                    }
                 });
 
-                const days = {};
+                // 2. Movements
+                const daysMap = new Map();
                 for(let i=13; i>=0; i--) {
                     const d = new Date(); d.setDate(d.getDate() - i);
-                    days[d.toLocaleDateString('pl-PL')] = { pz: 0, wz: 0 };
+                    daysMap.set(d.toISOString().slice(0,10), { pz: 0, wz: 0, label: d.toLocaleDateString('pl-PL', {day:'numeric', month:'short'}) });
                 }
+
+                let hasData = false;
                 state.history.forEach(h => {
                     if(!h.dateObj) return;
-                    const dStr = h.dateObj.toLocaleDateString('pl-PL');
-                    if(days[dStr]) {
-                        if(h.type === 'pz') days[dStr].pz++;
-                        if(h.type === 'wz') days[dStr].wz++;
+                    const key = h.dateObj.toISOString().slice(0,10);
+                    if(daysMap.has(key)) {
+                        const entry = daysMap.get(key);
+                        if(h.type === 'pz') entry.pz++; else entry.wz++;
+                        hasData = true;
                     }
                 });
-                
-                if (state.charts.movements) state.charts.movements.destroy();
-                state.charts.movements = new Chart(document.getElementById('chart-movements'), {
-                    type: 'bar',
-                    data: {
-                        labels: Object.keys(days),
-                        datasets: [
-                            { label: 'Przyjęcia (PZ)', data: Object.values(days).map(x=>x.pz), backgroundColor: '#10b981', borderRadius: 4 },
-                            { label: 'Wydania (WZ)', data: Object.values(days).map(x=>x.wz), backgroundColor: '#3b82f6', borderRadius: 4 }
-                        ]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        scales: { y: { grid: { display: true, borderDash: [2, 2] } }, x: { grid: { display: false } } },
-                        plugins: { legend: { labels: { usePointStyle: true } } }
-                    }
-                });
+
+                const ctxMove = document.getElementById('chart-movements');
+                const emptyMsg = document.getElementById('chart-movements-empty');
+
+                if(!hasData) {
+                    emptyMsg.classList.remove('hidden');
+                    ctxMove.style.opacity = 0;
+                } else {
+                    emptyMsg.classList.add('hidden');
+                    ctxMove.style.opacity = 1;
+                    
+                    const labels = Array.from(daysMap.values()).map(v => v.label);
+                    const dataPZ = Array.from(daysMap.values()).map(v => v.pz);
+                    const dataWZ = Array.from(daysMap.values()).map(v => v.wz);
+
+                    if (state.charts.movements) state.charts.movements.destroy();
+                    state.charts.movements = new Chart(ctxMove, {
+                        type: 'bar',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: 'PZ', data: dataPZ, backgroundColor: '#10b981', borderRadius: 4, barPercentage: 0.6 },
+                                { label: 'WZ', data: dataWZ, backgroundColor: '#3b82f6', borderRadius: 4, barPercentage: 0.6 }
+                            ]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            scales: { y: { beginAtZero: true, grid: { borderDash: [2, 2] } }, x: { grid: { display: false } } },
+                            plugins: { legend: { position:'bottom', labels: { usePointStyle: true } } }
+                        }
+                    });
+                }
             },
 
-            renderTables: () => {
+            renderDashboardTables: () => {
+                // Expiring
                 const batches = [];
                 const today = new Date();
                 state.products.filter(p => !p.archived && p.hasBatches).forEach(p => {
                     (p.lots||[]).forEach(l => {
                         if(l.qty > 0 && l.exp) {
                             const d = new Date(l.exp);
-                            const diffTime = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
-                            if(diffTime < 90) batches.push({ name: p.name, lot: l.lot, exp: l.exp, qty: l.qty, days: diffTime });
+                            const diff = Math.ceil((d - today) / (86400000));
+                            if(diff < 90) batches.push({ name: p.name, exp: l.exp, days: diff });
                         }
                     });
                 });
                 batches.sort((a,b) => a.days - b.days);
-                document.querySelector('#table-exp tbody').innerHTML = batches.slice(0, 6).map(b => `
-                    <tr><td>${Analytics.escapeHTML(b.name)}</td><td><span class="badge bg-neutral">${Analytics.escapeHTML(b.lot)}</span></td><td style="color:${b.days<0?'#ef4444':(b.days<30?'#f59e0b':'inherit')}">${b.exp} (${b.days} dni)</td><td>${b.qty}</td></tr>
-                `).join('') || '<tr><td colspan="4" style="text-align:center; color:var(--text-muted)">Brak zagrożonych partii</td></tr>';
+                
+                const expHtml = batches.slice(0, 5).map(b => `
+                    <tr>
+                        <td style="font-weight:500;">${Analytics.escapeHTML(b.name)}</td>
+                        <td style="color:var(--text-muted); font-size:0.8rem;">${b.exp}</td>
+                        <td style="text-align:right; font-weight:700; color:${b.days<0?'var(--danger)':'var(--warning)'}">${b.days}</td>
+                    </tr>
+                `).join('') || '<tr><td colspan="3" class="empty-state">Brak zagrożonych partii</td></tr>';
+                document.querySelector('#table-exp tbody').innerHTML = expHtml;
 
-                const userMap = {};
-                state.history.forEach(h => { userMap[h.user || 'Nieznany'] = (userMap[h.user || 'Nieznany'] || 0) + 1; });
-                const sortedUsers = Object.entries(userMap).sort((a,b) => b[1] - a[1]);
-                const maxOps = sortedUsers[0] ? sortedUsers[0][1] : 1;
-                document.querySelector('#table-users tbody').innerHTML = sortedUsers.slice(0, 5).map(([u, c]) => `
-                    <tr><td style="font-weight:600;">${Analytics.escapeHTML(u)}</td><td>${c}</td><td style="width:120px;"><div class="progress-bar"><div class="progress-fill" style="width:${(c/maxOps)*100}%; background:var(--accent);"></div></div></td></tr>
-                `).join('');
+                // Users
+                const userCounts = {};
+                state.history.forEach(h => { 
+                    const u = h.user || 'Nieznany';
+                    userCounts[u] = (userCounts[u] || 0) + 1; 
+                });
+                const topUsers = Object.entries(userCounts).sort((a,b) => b[1] - a[1]).slice(0, 5);
+                const maxOps = topUsers[0] ? topUsers[0][1] : 1;
+                
+                const userHtml = topUsers.map(([u, c]) => `
+                    <tr>
+                        <td style="font-weight:600;">${Analytics.escapeHTML(u)}</td>
+                        <td style="text-align:right;">${c}</td>
+                        <td style="width:80px;">
+                            <div style="height:6px; background:#e2e8f0; border-radius:3px; overflow:hidden;">
+                                <div style="height:100%; width:${(c/maxOps)*100}%; background:var(--accent);"></div>
+                            </div>
+                        </td>
+                    </tr>
+                `).join('') || '<tr><td colspan="3" class="empty-state">Brak danych</td></tr>';
+                document.querySelector('#table-users tbody').innerHTML = userHtml;
+            },
+
+            // --- SORTING ---
+            setSort: (col) => {
+                if(state.sort.col === col) {
+                    state.sort.dir = state.sort.dir === 'asc' ? 'desc' : 'asc';
+                } else {
+                    state.sort.col = col;
+                    state.sort.dir = 'asc';
+                }
+                Analytics.renderWarehouse();
             },
 
             renderWarehouse: () => {
-                const searchEl = document.getElementById('search-warehouse');
-                const catEl = document.getElementById('filter-category');
-                const q = searchEl ? searchEl.value.toLowerCase() : '';
-                const cat = catEl ? catEl.value : 'all';
-                
+                const q = (document.getElementById('search-warehouse')?.value || '').toLowerCase();
+                const cat = document.getElementById('filter-category')?.value || 'all';
                 const tbody = document.querySelector('#table-warehouse tbody');
                 
-                const filtered = state.products.filter(p => {
+                let filtered = state.products.filter(p => {
                     if (p.archived) return false;
                     const matchesSearch = p.name.toLowerCase().includes(q) || (p.ean||'').includes(q);
                     const matchesCat = cat === 'all' || p.cat === cat;
                     return matchesSearch && matchesCat;
                 });
-                
+
+                // Update headers visual state
+                const headers = document.querySelectorAll('#table-warehouse th.sortable');
+                headers.forEach(th => {
+                    th.classList.remove('active');
+                    // Reset text content to remove old arrows if any (simplified approach: static HTML + dynamic span or just HTML update)
+                    // Better approach: Re-render headers text or use specific spans. 
+                    // To keep it simple in this logic, we will check the onclick attr to find the col name
+                    if(th.getAttribute('onclick').includes(`'${state.sort.col}'`)) {
+                        th.classList.add('active');
+                        // Inject arrow
+                        const arrow = state.sort.dir === 'asc' ? ' ▲' : ' ▼';
+                        // Simple cleanup: remove existing spans
+                        const existingSpan = th.querySelector('span');
+                        if(existingSpan) existingSpan.innerText = arrow;
+                        else th.innerHTML += `<span>${arrow}</span>`;
+                    } else {
+                        const existingSpan = th.querySelector('span');
+                        if(existingSpan) existingSpan.innerText = '';
+                    }
+                });
+
+                // Apply Sorting
+                filtered.sort((a, b) => {
+                    let valA = a[state.sort.col];
+                    let valB = b[state.sort.col];
+
+                    // Handle undefined/null
+                    if (valA === undefined || valA === null) valA = '';
+                    if (valB === undefined || valB === null) valB = '';
+
+                    // String sorting
+                    if (typeof valA === 'string' && typeof valB === 'string') {
+                        return state.sort.dir === 'asc' ? valA.localeCompare(valB) : valB.localeCompare(valA);
+                    }
+                    // Numeric sorting
+                    return state.sort.dir === 'asc' ? valA - valB : valB - valA;
+                });
+
+
                 if(filtered.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center; padding:20px; color:var(--text-muted)">Brak wyników</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="6" class="empty-state">Brak wyników wyszukiwania</td></tr>';
                     return;
                 }
 
-                const html = filtered.map(p => {
-                    const dailyUsage = p._usageQty30Days / 30;
-                    let coverage = '∞';
-                    let coverageColor = 'bg-neutral';
-                    let coverageDays = 9999;
+                // Limit render to 100 items for performance
+                tbody.innerHTML = filtered.slice(0, 100).map(p => {
+                    const statusHtml = p.total <= (p.min||0) 
+                        ? `<span class="badge bg-danger">NISKI</span>` 
+                        : `<span class="badge bg-success">OK</span>`;
                     
-                    if(dailyUsage > 0) {
-                        coverageDays = Math.round(p.total / dailyUsage);
-                        coverage = coverageDays + ' dni';
-                        if(coverageDays < 7) coverageColor = 'bg-danger';
-                        else if(coverageDays < 14) coverageColor = 'bg-warning';
-                        else coverageColor = 'bg-success';
-                    } else if (p.total === 0) {
-                         coverage = '0 dni';
-                         coverageColor = 'bg-danger';
-                    }
-
                     const abcClass = p._abc === 'A' ? 'abc-a' : (p._abc === 'B' ? 'abc-b' : 'abc-c');
-                    p._coverageDays = coverageDays;
-                    const catColors = Analytics.getCategoryColor(p.cat || 'Inne');
-                    const catStyle = `background:${catColors.bg}; color:${catColors.text}; border:1px solid ${catColors.border}`;
-
+                    
                     return `
                     <tr class="clickable-row" onclick="Analytics.openDetails('${p.id}')">
                         <td>
                             <div style="font-weight:600;">${Analytics.escapeHTML(p.name)}</div>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">${p.ean || ''}</div>
                         </td>
+                        <td><span class="badge bg-neutral">${Analytics.escapeHTML(p.cat || '-')}</span></td>
+                        <td style="font-weight:700;">${p.total} <small style="color:var(--text-muted); font-weight:400;">${p.unit}</small></td>
+                        <td>${parseFloat(p._usage30).toFixed(1)}</td>
+                        <td>${p._coverage > 365 ? '> rok' : p._coverage + ' dni'}</td>
                         <td>
-                            <div style="font-family:monospace; color:var(--text-muted);">${Analytics.escapeHTML(p.ean || '-')}</div>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                ${statusHtml}
+                                <span class="abc-tag ${abcClass}">${p._abc}</span>
+                            </div>
                         </td>
-                        <td><span class="badge" style="${catStyle}">${Analytics.escapeHTML(p.cat || 'Inne')}</span></td>
-                        <td style="font-weight:700; font-size:1rem;">${p.total} <span style="font-size:0.75rem; font-weight:400; color:var(--text-muted)">${p.unit}</span></td>
-                        <td>${parseFloat(p._usageQty30Days).toFixed(1)}</td>
-                        <td><span class="badge ${coverageColor}">${coverage}</span></td>
-                        <td>${p.total <= (p.min||5) ? '<span class="badge bg-danger">Niski Stan</span>' : '<span class="badge bg-success">W Normie</span>'}</td>
-                    </tr>
-                    `;
+                    </tr>`;
                 }).join('');
-                tbody.innerHTML = html;
             },
 
             renderHistory: () => {
-                const searchEl = document.getElementById('search-history');
-                const q = searchEl ? searchEl.value.toLowerCase() : '';
-
+                const q = (document.getElementById('search-history')?.value || '').toLowerCase();
                 const tbody = document.querySelector('#table-full-history tbody');
                 const filtered = state.history.filter(h => (h.doc||'').toLowerCase().includes(q) || (h.user||'').toLowerCase().includes(q));
 
                 if(filtered.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:var(--text-muted)">Brak wyników</td></tr>';
+                    tbody.innerHTML = '<tr><td colspan="5" class="empty-state">Brak wyników</td></tr>';
                     return;
                 }
 
-                const html = filtered.map(h => {
+                tbody.innerHTML = filtered.slice(0, 100).map(h => {
                     const badge = h.type === 'pz' ? 'bg-success' : 'bg-info';
-                    const typeLabel = h.type === 'pz' ? 'Przyjęcie (PZ)' : 'Wydanie (WZ)';
-                    const dateStr = h.dateObj ? h.dateObj.toLocaleString('pl-PL', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'numeric', year: 'numeric' }) : '-';
+                    const typeLabel = h.type === 'pz' ? 'PZ' : 'WZ';
+                    const dateStr = h.dateObj ? h.dateObj.toLocaleString('pl-PL', { month:'numeric', day:'numeric', hour:'2-digit', minute:'2-digit' }) : '-';
                     
                     return `
                     <tr>
-                        <td style="color:var(--text-muted); font-size:0.85rem;">${dateStr}</td>
+                        <td style="color:var(--text-muted); font-size:0.8rem;">${dateStr}</td>
                         <td><span class="badge ${badge}">${typeLabel}</span></td>
                         <td style="font-weight:600;">${Analytics.escapeHTML(h.doc)}</td>
                         <td>${Analytics.escapeHTML(h.user)}</td>
                         <td>
-                            <button class="btn-sm" onclick="Analytics.openDocDetails('${h.id}')">
-                                Podgląd Dokumentu
-                            </button>
+                            <button class="btn-sm" onclick="Analytics.openDocDetails('${h.id}')">Podgląd</button>
                         </td>
-                    </tr>
-                    `;
+                    </tr>`;
                 }).join('');
-                tbody.innerHTML = html;
             },
 
-            // --- INTERACTIVE REPORT FUNCTIONS ---
+            // --- REPORTING MODALS ---
             showLowStockReport: () => {
-                const lowStockItems = state.products.filter(p => !p.archived && p.total <= (p.min || 5));
-                const tbody = document.querySelector('#table-low-stock-report tbody');
-                
-                if(lowStockItems.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--success);">Brak produktów poniżej minimum! Wszystko w normie.</td></tr>';
-                } else {
-                    tbody.innerHTML = lowStockItems.map(p => `
-                        <tr class="clickable-row" onclick="Analytics.openDetails('${p.id}')">
-                            <td style="font-weight:600;">${Analytics.escapeHTML(p.name)}</td>
-                            <td><span class="badge bg-neutral">${Analytics.escapeHTML(p.cat)}</span></td>
+                const items = state.products.filter(p => !p.archived && p.total <= (p.min || 0));
+                Analytics.renderGenericReport('Niski Stan Magazynowy', 'RAPORT ALARMOWY', 
+                    ['Produkt', 'Kategoria', 'Min', 'Obecnie', 'Brakuje'],
+                    items.map(p => `
+                        <tr>
+                            <td style="font-weight:600">${Analytics.escapeHTML(p.name)}</td>
+                            <td>${Analytics.escapeHTML(p.cat)}</td>
                             <td>${p.min}</td>
                             <td style="color:var(--danger); font-weight:700;">${p.total}</td>
-                            <td>${(p.min - p.total)}</td>
+                            <td>${p.min - p.total}</td>
                         </tr>
-                    `).join('');
-                }
-                document.getElementById('modal-low-stock').classList.add('active');
+                    `)
+                );
             },
 
             showExpiringReport: () => {
                 const batches = [];
-                const today = new Date();
-                state.products.filter(p => !p.archived && p.hasBatches).forEach(p => {
+                state.products.filter(p => p.hasBatches && !p.archived).forEach(p => {
                     (p.lots||[]).forEach(l => {
                         if(l.qty > 0 && l.exp) {
-                            const d = new Date(l.exp);
-                            const diffTime = Math.ceil((d - today) / (1000 * 60 * 60 * 24));
-                            if(diffTime < 60) batches.push({ pid: p.id, name: p.name, lot: l.lot, exp: l.exp, qty: l.qty, days: diffTime });
+                            const d = Math.ceil((new Date(l.exp) - new Date())/86400000);
+                            if(d < 60) batches.push({ name: p.name, lot: l.lot, exp: l.exp, days: d, qty: l.qty });
                         }
                     });
                 });
                 batches.sort((a,b) => a.days - b.days);
 
-                const tbody = document.querySelector('#table-expiring-report tbody');
-                
-                if(batches.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--success);">Brak partii wygasających w ciągu 60 dni.</td></tr>';
-                } else {
-                    tbody.innerHTML = batches.map(b => {
-                        let color = 'var(--text-main)';
-                        if(b.days < 0) color = '#ef4444';
-                        else if(b.days < 30) color = '#f59e0b';
-                        
-                        return `
-                        <tr class="clickable-row" onclick="Analytics.openDetails('${b.pid}')">
-                            <td style="font-weight:600;">${Analytics.escapeHTML(b.name)}</td>
-                            <td><span class="badge bg-neutral">${Analytics.escapeHTML(b.lot)}</span></td>
-                            <td style="color:${color}; font-weight:600;">${b.exp}</td>
-                            <td style="color:${color};">${b.days} dni</td>
-                            <td style="font-weight:700;">${b.qty}</td>
+                Analytics.renderGenericReport('Partie Wygasające (<60 dni)', 'RAPORT WAŻNOŚCI',
+                    ['Produkt', 'Partia', 'Ważność', 'Dni', 'Ilość'],
+                    batches.map(b => `
+                        <tr>
+                            <td style="font-weight:600">${Analytics.escapeHTML(b.name)}</td>
+                            <td><span class="badge bg-neutral">${b.lot}</span></td>
+                            <td>${b.exp}</td>
+                            <td style="color:${b.days<0?'var(--danger)':'var(--warning)'}">${b.days}</td>
+                            <td>${b.qty}</td>
                         </tr>
-                        `;
-                    }).join('');
-                }
-                document.getElementById('modal-expiring').classList.add('active');
+                    `)
+                );
             },
 
-            openDocDetails: (docDbId) => {
-                const docData = state.history.find(h => h.id === docDbId);
-                if(!docData) return;
+            renderGenericReport: (title, subtitle, headers, rows) => {
+                document.getElementById('report-title').innerText = title;
+                document.getElementById('report-subtitle').innerText = subtitle;
+                const thead = document.querySelector('#table-report thead');
+                const tbody = document.querySelector('#table-report tbody');
+                
+                thead.innerHTML = `<tr>${headers.map(h => `<th>${h}</th>`).join('')}</tr>`;
+                tbody.innerHTML = rows.length ? rows.join('') : '<tr><td colspan="5" class="empty-state">Brak danych spełniających kryteria.</td></tr>';
+                
+                document.getElementById('modal-report').classList.add('active');
+            },
 
-                document.getElementById('doc-type-label').innerText = docData.type === 'pz' ? 'Przyjęcie Zewnętrzne' : 'Wydanie Zewnętrzne';
-                document.getElementById('doc-ref-title').innerText = docData.doc;
-                document.getElementById('doc-user-date').innerText = `${docData.user} | ${docData.dateObj?.toLocaleString('pl-PL')}`;
-
+            // --- DETAILS MODALS ---
+            openDocDetails: (id) => {
+                const doc = state.history.find(h => h.id === id);
+                if(!doc) return;
+                
+                document.getElementById('doc-ref-title').innerText = doc.doc;
+                document.getElementById('doc-type-label').innerText = doc.type === 'pz' ? 'PRZYJĘCIE (PZ)' : 'WYDANIE (WZ)';
+                document.getElementById('doc-type-label').style.color = doc.type === 'pz' ? 'var(--success)' : 'var(--accent)';
+                document.getElementById('doc-user-date').innerText = `${doc.user} | ${doc.dateObj?.toLocaleString()}`;
+                
                 const tbody = document.querySelector('#doc-items-table tbody');
-                if(!docData.items || docData.items.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding:20px;">Brak pozycji w dokumencie</td></tr>';
-                    document.getElementById('doc-total-items').innerText = '0';
-                } else {
-                    let totalItems = 0;
-                    tbody.innerHTML = docData.items.map(item => {
-                        totalItems += (item.qty || 0);
-                        const isSimple = !item.lot;
-                        return `
-                        <tr>
-                            <td style="font-weight:600;">${Analytics.escapeHTML(item.name)}</td>
-                            <td>
-                                ${isSimple 
-                                  ? '<span style="color:var(--text-muted); font-size:0.8rem;">Standard</span>' 
-                                  : `<div><span class="badge bg-neutral">LOT: ${Analytics.escapeHTML(item.lot)}</span></div><div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">Exp: ${item.exp}</div>`
-                                }
-                            </td>
-                            <td style="text-align:right; font-weight:700; color:${docData.type==='pz'?'var(--success)':'var(--accent)'};">
-                                ${item.qty}
-                            </td>
-                        </tr>
-                        `;
-                    }).join('');
-                    document.getElementById('doc-total-items').innerText = totalItems;
-                }
-
+                let total = 0;
+                tbody.innerHTML = (doc.items || []).map(i => {
+                    total += (parseFloat(i.qty) || 0);
+                    return `
+                    <tr>
+                        <td style="font-weight:600;">${Analytics.escapeHTML(i.name)}</td>
+                        <td>${i.lot ? `<span class="badge bg-neutral">LOT: ${i.lot}</span>` : '<small style="color:var(--text-muted)">Standard</small>'}</td>
+                        <td style="text-align:right; font-weight:700;">${i.qty}</td>
+                    </tr>`;
+                }).join('');
+                document.getElementById('doc-total-items').innerText = total;
                 document.getElementById('modal-doc-details').classList.add('active');
             },
 
             openDetails: (pid) => {
                 const p = state.products.find(x => x.id === pid);
                 if (!p) return;
-
-                // Close other modals if open (e.g. low stock report) to prevent stacking issues
-                document.querySelectorAll('.modal-backdrop').forEach(m => {
-                    if(m.id !== 'modal-product-details') m.classList.remove('active');
-                });
-
+                
+                // Populate Head
                 document.getElementById('detail-name').innerText = p.name;
-                document.getElementById('detail-ean').innerText = `EAN: ${p.ean || '-'}`;
-                document.getElementById('detail-abc').innerText = p._abc || '-';
-                document.getElementById('detail-abc').className = `abc-tag ${p._abc==='A'?'abc-a':(p._abc==='B'?'abc-b':'abc-c')}`;
+                document.getElementById('detail-ean').innerText = p.ean || '-';
+                document.getElementById('detail-cat-badge').innerText = p.cat || 'Bez kat.';
+                
+                const abcEl = document.getElementById('detail-abc');
+                abcEl.innerText = p._abc;
+                abcEl.className = `abc-tag ${p._abc==='A'?'abc-a':(p._abc==='B'?'abc-b':'abc-c')}`;
 
+                // Populate Stats
                 document.getElementById('detail-total').innerText = `${p.total} ${p.unit}`;
                 document.getElementById('detail-min').innerText = p.min || 0;
                 document.getElementById('detail-loc').innerText = p.loc || '-';
-                
-                // Colorize category badge in modal
-                const catColors = Analytics.getCategoryColor(p.cat || 'Inne');
-                const catBadge = document.getElementById('detail-cat-badge');
-                catBadge.innerText = p.cat || 'Inne';
-                catBadge.style = `background:${catColors.bg}; color:${catColors.text}; border:1px solid ${catColors.border}`;
+                document.getElementById('detail-coverage').innerText = p._coverage > 365 ? '> 1 rok' : p._coverage + ' dni';
 
-                // Use pre-calculated coverage from renderWarehouse if available, else recalc
-                let coverage = '∞';
-                const dailyUsage = p._usageQty30Days / 30;
-                if(dailyUsage > 0) coverage = Math.round(p.total / dailyUsage) + ' dni';
-                else if(p.total === 0) coverage = '0 dni';
-                document.getElementById('detail-coverage').innerText = coverage;
-
-                // Lots Table
+                // Populate Lots
                 const tbodyLots = document.querySelector('#detail-table-lots tbody');
-                if (!p.hasBatches) {
-                    tbodyLots.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-muted)">Produkt w trybie prostym (bez partii)</td></tr>`;
+                if(!p.hasBatches) {
+                    tbodyLots.innerHTML = '<tr><td colspan="3" class="empty-state">Produkt bez obsługi partii</td></tr>';
                 } else {
                     const lots = (p.lots || []).filter(l => l.qty > 0).sort((a,b) => new Date(a.exp) - new Date(b.exp));
-                    if(lots.length === 0) {
-                          tbodyLots.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-muted)">Brak stanów magazynowych</td></tr>`;
-                    } else {
-                        tbodyLots.innerHTML = lots.map(l => {
-                            const days = Math.ceil((new Date(l.exp) - new Date()) / (1000 * 60 * 60 * 24));
-                            const color = days < 0 ? '#ef4444' : (days < 30 ? '#f59e0b' : 'inherit');
-                            return `<tr><td><span class="badge bg-neutral">${Analytics.escapeHTML(l.lot)}</span></td><td style="color:${color}">${l.exp} (${days} dni)</td><td style="font-weight:700;">${l.qty}</td></tr>`;
-                        }).join('');
-                    }
+                    tbodyLots.innerHTML = lots.length ? lots.map(l => {
+                        const d = Math.ceil((new Date(l.exp) - new Date())/86400000);
+                        return `<tr><td><span class="badge bg-neutral">${l.lot}</span></td><td style="color:${d<30?'var(--warning)':'inherit'}">${l.exp} (${d}d)</td><td style="text-align:right; font-weight:700;">${l.qty}</td></tr>`;
+                    }).join('') : '<tr><td colspan="3" class="empty-state">Brak stanu</td></tr>';
                 }
 
-                // History Table
+                // Populate History (Client-side filtered from loaded history)
                 const tbodyHist = document.querySelector('#detail-table-history tbody');
-                const prodHistory = state.history.filter(h => h.items && h.items.some(i => i.pid === pid));
+                const pHist = state.history.filter(h => h.items && h.items.some(i => i.pid === pid)).slice(0, 15);
                 
-                if(prodHistory.length === 0) {
-                      tbodyHist.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:20px; color:var(--text-muted)">Brak historii operacji</td></tr>`;
-                } else {
-                    tbodyHist.innerHTML = prodHistory.slice(0, 20).map(h => {
-                        const item = h.items.find(i => i.pid === pid);
-                        const qty = item ? item.qty : 0;
-                        const isPZ = h.type === 'pz';
-                        const badge = isPZ ? 'bg-success' : 'bg-info';
-                        const sign = isPZ ? '+' : '-';
-                        const label = isPZ ? 'PZ' : 'WZ';
-                        
-                        return `
-                        <tr>
-                            <td style="font-size:0.85rem; color:var(--text-muted);">${h.dateObj?.toLocaleDateString() || '-'}</td>
-                            <td><span class="badge ${badge}">${label}</span></td>
-                            <td style="font-weight:600; color:${isPZ?'var(--success)':'var(--accent)'}">${sign}${qty}</td>
-                        </tr>
-                        `;
-                    }).join('');
-                }
+                tbodyHist.innerHTML = pHist.length ? pHist.map(h => {
+                    const item = h.items.find(i => i.pid === pid);
+                    const isPZ = h.type === 'pz';
+                    return `<tr>
+                        <td style="font-size:0.8rem; color:var(--text-muted)">${h.dateObj.toLocaleDateString()}</td>
+                        <td><span class="badge ${isPZ?'bg-success':'bg-info'}">${isPZ?'PZ':'WZ'}</span></td>
+                        <td style="text-align:right; font-weight:700; color:${isPZ?'var(--success)':'var(--accent)'}">${isPZ?'+':'-'}${item.qty}</td>
+                    </tr>`;
+                }).join('') : '<tr><td colspan="3" class="empty-state">Brak historii w ostatnim czasie</td></tr>';
 
                 document.getElementById('modal-product-details').classList.add('active');
             },
@@ -1012,7 +1093,6 @@
 
         window.App = App;
         window.Analytics = Analytics;
-
         App.init();
     </script>
 </body>
